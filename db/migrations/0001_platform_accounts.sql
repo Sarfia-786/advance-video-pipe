@@ -103,4 +103,6 @@ BEGIN
   END IF;
 END
 $fn$;
+-- Do not expose credit provisioning to PUBLIC; grant execution only to the trusted app role.
+REVOKE ALL ON FUNCTION platform.provision_account_created(TEXT, TEXT, BIGINT) FROM PUBLIC;
 COMMIT;
