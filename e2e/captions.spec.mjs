@@ -7,10 +7,11 @@ for (const [path, text, add, download] of [
 ]) {
   test('edit, preview and download ' + path, async ({ page }) => {
     await page.goto(path);
-    await page.getByLabel(text, { exact: true }).fill('Hello 世界');
-    await expect(page.locator('aside')).toContainText('Hello 世界');
+    const cueRows = page.getByRole('region').getByRole('group');
+    await cueRows.nth(0).getByRole('textbox', { name: text, exact: true }).fill('Hello 世界');
+    await expect(page.getByRole('complementary')).toContainText('Hello 世界');
     await page.getByRole('button', { name: add }).click();
-    await page.getByLabel(text, { exact: true }).nth(1).fill('Second');
+    await cueRows.nth(1).getByRole('textbox', { name: text, exact: true }).fill('Second');
     const saved = page.waitForEvent('download');
     await page.getByRole('button', { name: download }).click();
     const file = await saved;
