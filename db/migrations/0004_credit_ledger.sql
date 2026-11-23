@@ -276,13 +276,13 @@ BEGIN
     );
   END IF;
 
-  UPDATE platform.credit_reservations
+  UPDATE platform.credit_reservations AS r
      SET captured_amount = p_actual_amount,
          released_amount = v_release,
          status = 'settled',
          reason = p_reason,
          settled_at = now()
-   WHERE user_id = p_user_id AND operation_key = p_operation_key;
+   WHERE r.user_id = p_user_id AND r.operation_key = p_operation_key;
 
   SELECT * INTO v_meter FROM platform.credit_meter(p_user_id);
   RETURN QUERY SELECT p_operation_key, p_actual_amount, v_release,
