@@ -67,3 +67,13 @@ test('style presets share validated controls and preserve source intervals when 
     assert.throws(() => serializeAss(words, input), { code: 'CAPTION_STYLE' });
   }
 });
+
+test('a saved manual line break survives SRT, ASS and karaoke, including tracks grouped one word at a time', async () => {
+  const input = words.map((w, i) => ({ ...w, lineBreakBefore: i === 2 }));
+  assert.ok(serializeAss(input).includes(',\\Nthere!'));
+  assert.ok(serializeAss(input, { preset: 'karaoke' }).includes('{\\kf46}\\Nthere!'));
+  assert.ok((await (await exportSrt(post({ words: input }))).text()).includes('Hello,\r\nthere!'));
+  assert.throws(() => serializeAss([{ ...words[0], lineBreakBefore: 'yes' }]), { code: 'WORD_BREAK' });
+  const many = Array.from({ length: 1000 }, (_, i) => ({ ...words[0], startMs: 10 * i, endMs: 10 * (i + 1) }));
+  assert.equal(serializeAss(many, { groupWords: 1 }).split('Dialogue: ').length - 1, 1000);
+});

@@ -23,7 +23,12 @@ export default function SavedCaptionDocuments({ copy, style, setStyle, getWords,
     setBusy(true);
     setMessage('');
     try { await action(); }
-    catch (error) { setMessage(captionErrorMessage(error || {}, copy)); }
+    catch (error) {
+      if (error?.code === 'AUTH_REQUIRED' || error?.code === 'PLAN_REQUIRED') {
+        setDocs([]); setActive({}); setNames({ project: '', preset: '' });
+      }
+      setMessage(captionErrorMessage(error || {}, copy));
+    }
     finally { setBusy(false); }
   }
   async function open(kind, id) {

@@ -12,7 +12,8 @@ export async function POST(request) {
     const contentType = request.headers.get('content-type') || '';
     if (!/^multipart\/form-data\s*;/i.test(contentType)) throw new PlatformAccessError('CONTENT_TYPE', 415);
     return await withCaptionRenderSlot(pool, actor, async () => {
-      const bytes = await readCaptionBytes(request, MAX_VIDEO_BYTES + MAX_BODY_BYTES + 8192);
+      const uploadSignal = AbortSignal.any([request.signal, AbortSignal.timeout(60000)]);
+      const bytes = await readCaptionBytes(request, MAX_VIDEO_BYTES + MAX_BODY_BYTES + 8192, uploadSignal);
       let form, track;
       try {
         form = await new Response(bytes, { headers: { 'Content-Type': contentType } }).formData();
@@ -27,7 +28,8 @@ export async function POST(request) {
       const file = form.get('video');
       if (!(file instanceof Blob)) throw new PlatformAccessError('CAPTION_VIDEO', 422);
       if (file.size > MAX_VIDEO_BYTES) throw new PlatformAccessError('CAPTION_VIDEO_SIZE', 413);
-      const video = await burnCaptionVideo(actor, Buffer.from(await file.arrayBuffer()), track, request.signal);
+      const currentActor = await captionActor(request);
+      const video = await burnCaptionVideo(currentActor, Buffer.from(await file.arrayBuffer()), track, request.signal);
       return new Response(video, { headers: { 'Content-Type': 'video/mp4', 'Content-Disposition': 'attachment; filename="captioned.mp4"',
         'Cache-Control': 'private, no-store', Vary: 'Cookie', 'X-Content-Type-Options': 'nosniff' } });
     });

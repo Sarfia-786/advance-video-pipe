@@ -19,7 +19,7 @@ function readDrafts(rows, groupWords) {
     const input = rows.map(({ startMs, endMs, ...word }) => ({
       ...word, startMs: toMilliseconds(startMs), endMs: toMilliseconds(endMs),
     }));
-    return { track: buildWordTrack(input, groupWords) };
+    return { track: buildWordTrack(input, groupWords, MAX_WORDS) };
   } catch (error) {
     return { error };
   }
@@ -51,7 +51,7 @@ export default function WordTimingEditor({ copy }) {
 
   function openProject(data) {
     const nextStyle = data?.style === undefined ? style : normalizeCaptionStyle(data.style);
-    const { words } = buildWordTrack(data?.words, nextStyle.groupWords);
+    const { words } = buildWordTrack(data?.words, nextStyle.groupWords, MAX_WORDS);
     changeRows(words.map(word => ({ ...word, id: nextId.current++, startMs: String(word.startMs), endMs: String(word.endMs) })));
     setStyle(nextStyle);
     setTime(words[0].startMs);
@@ -134,6 +134,8 @@ export default function WordTimingEditor({ copy }) {
                 <legend>{copy.word} {index + 1}</legend>
                 <label>{copy.wordText}<input type="text" value={row.text} maxLength={128} required onChange={event => edit(row.id, 'text', event.target.value)} /></label>
                 <label>{copy.speaker}<input type="text" value={row.speakerId} maxLength={100} required onChange={event => edit(row.id, 'speakerId', event.target.value)} /></label>
+                <label className={styles.breakLine}><input type="checkbox" checked={Boolean(row.lineBreakBefore)}
+                  onChange={event => edit(row.id, 'lineBreakBefore', event.target.checked)} />{copy.lineBreakBefore}</label>
                 <div className={styles.times}>
                   {['startMs', 'endMs'].map(field => (
                     <label key={field}>{field === 'startMs' ? copy.start : copy.end}

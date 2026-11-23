@@ -16,6 +16,8 @@
     "words": "逐词时间"
   },
   "word": "词",
+  "lineBreakBefore": "从这个词起换行",
+  "WORD_BREAK": "换行标记必须为 true 或 false。",
   "wordText": "词或标点",
   "speaker": "说话人 ID",
   "wordPreview": "逐词预览",

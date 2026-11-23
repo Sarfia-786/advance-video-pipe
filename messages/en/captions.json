@@ -16,6 +16,8 @@
     "words": "Word timing"
   },
   "word": "Word",
+  "lineBreakBefore": "Start a new caption line here",
+  "WORD_BREAK": "Use a true or false value for the line break.",
   "wordText": "Word or punctuation",
   "speaker": "Speaker ID",
   "wordPreview": "Timed word preview",

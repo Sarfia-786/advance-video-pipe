@@ -41,3 +41,6 @@
 .stage mark { display: inline-block; background-color: transparent; font: inherit; }
 .silent { position: absolute; inset: 45% 5% auto; text-align: center; font-size: .85rem; color: #e4e7ec; }
 .videoInput { margin-top: 1rem; }
+
+.page .breakLine { display: flex; align-items: center; gap: .45rem; }
+.breakLine input[type=checkbox] { width: auto; margin: 0; }

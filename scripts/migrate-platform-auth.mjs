@@ -15,7 +15,7 @@ try {
   await db.query(await sql('0003_platform_entitlements.sql'));
   await db.query(await sql('0004_credit_ledger.sql'));
   await db.query(await sql('0005_caption_documents.sql'));
-  console.log('Platform account, entitlements and credit ledger migrations applied');
+  console.log('Platform account, entitlement, credit and caption migrations applied');
 } finally {
   db.release(true);
   await pool.end();
