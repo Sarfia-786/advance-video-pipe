@@ -126,8 +126,12 @@ test('real Postgres + SMTP verification + sessions + account replay', { timeout:
   assert.equal(changedLogin.status, 200, 'New password must work');
   const changedCookie = sessionCookie(changedLogin);
   assert.equal((await getPlatformActor(new Headers({ Cookie: changedCookie }))).userId, userId);
-  const oldLogin = await endpoint('/sign-in/email', { email, password: PASSWORD });
-  assert.notEqual(oldLogin.status, 200, 'Old password must no longer work');
+  // This server-side assertion bypasses browser rate limits but still verifies
+  // Better Auth rejects the old password after successful recovery.
+  await assert.rejects(
+    () => auth.api.signInEmail({ body: { email, password: PASSWORD } }),
+    'Old password must no longer work',
+  );
 
   const revoke = await endpoint('/revoke-sessions', {}, { cookie: changedCookie });
   assert.equal(revoke.status, 200, 'Logout across devices must succeed');
