@@ -15,6 +15,7 @@ test('uses observed timings for two speakers, silence, unequal words and attache
   assert.equal(track.words[1].source, 'provider');
   assert.deepEqual(track.words[1].providerTiming, { startMs: 410, endMs: 450 });
   assert.equal(wordSeparator('你', '好'), '');
+  assert.equal(wordSeparator('𠮷', '野'), '');
   assert.equal(wordSeparator('好。', '再见'), '');
   assert.equal(serializeSrt(buildWordTrack(track.words).cues), expectedSrt);
 });

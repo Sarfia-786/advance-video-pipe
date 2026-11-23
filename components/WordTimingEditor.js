@@ -90,7 +90,7 @@ export default function WordTimingEditor({ copy }) {
           <details className={styles.importer}>
             <summary>{copy.importTitle}</summary>
             <label>{copy.importLabel}
-              <textarea value={input} rows={4} maxLength={262144} placeholder={'{"words":[{"text":"Hello","startMs":100,"endMs":480,"speakerId":"a"}]}'}
+              <textarea value={input} rows={4} maxLength={1024 * 1024} placeholder={'{"words":[{"text":"Hello","startMs":100,"endMs":480,"speakerId":"a"}]}'}
                 onChange={event => setInput(event.target.value)} />
             </label>
             <button type="button" disabled={busy || !input.trim()} onClick={importWords}>{copy.importAction}</button>
