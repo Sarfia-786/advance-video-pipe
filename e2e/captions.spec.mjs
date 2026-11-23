@@ -8,7 +8,7 @@ for (const [path, text, add, download] of [
   test('edit, preview and download ' + path, async ({ page }) => {
     await page.goto(path);
     await page.getByLabel(text, { exact: true }).fill('Hello 世界');
-    await expect(page.locator('aside')).toContainText('Hello 世界');
+    await expect(page.getByRole('complementary')).toContainText('Hello 世界');
     await page.getByRole('button', { name: add }).click();
     await page.getByLabel(text, { exact: true }).nth(1).fill('Second');
     const saved = page.waitForEvent('download');
