@@ -539,6 +539,10 @@ Installers are output to the `release/` folder. Pre-built binaries are also avai
 
 Open **Account and settings** from the web studio to register, verify your email, or manage your profile in English or Chinese. Local development uses PostgreSQL and a Mailpit inbox. [Account setup and verification](docs/implementation/PLATFORM_AUTH.md)
 
+## Usage and credits
+
+Signed-in members can open `/usage` or `/zh/usage` to see available, reserved, spent and settled credits. Premium accounts can paginate tenant-scoped ledger history with operation, tool, model, job, top-up and reason metadata. Managed operations reserve a server-calculated maximum before work starts, then capture actual usage and release the unused hold. [Credit ledger contract and verification](docs/implementation/CREDITS.md)
+
 ## 🏗️ Architecture
 
 The app is a **Next.js monorepo** with a shared `packages/studio` component library.
