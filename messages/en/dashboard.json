@@ -1,0 +1,59 @@
+{
+  "title": "Your creative studio",
+  "subtitle": "Pick a workflow and continue in the specialist studio. Your account information is read from the platform API.",
+  "navigation": "Navigate",
+  "quickActions": "Quick create",
+  "overview": "Account overview",
+  "account": "Account & settings",
+  "projects": "Projects and renders",
+  "projectsPending": "Saved projects and active renders will appear here after the private project and worker services launch.",
+  "loading": "Loading your account…",
+  "signedOut": "Sign in to view your own plan and credits.",
+  "signIn": "Sign in",
+  "failed": "Account details could not be loaded.",
+  "retry": "Retry",
+  "credits": "Available credits",
+  "plan": "Current plan",
+  "plans": {
+    "free": "Free",
+    "premium": "Premium"
+  },
+  "soon": "Not available yet",
+  "open": "Open",
+  "primary": {
+    "dashboard": "Dashboard",
+    "studio": "All studios",
+    "captions": "Caption editor",
+    "account": "Account & settings"
+  },
+  "actions": {
+    "short": {
+      "title": "Script to Short",
+      "description": "Automated Shorts pipelines will arrive with issue #18."
+    },
+    "image": {
+      "title": "Generate image",
+      "description": "Open Image Studio."
+    },
+    "video": {
+      "title": "Generate video",
+      "description": "Open Video Studio."
+    },
+    "script": {
+      "title": "Write a script",
+      "description": "Open the AI agents workspace."
+    },
+    "workflow": {
+      "title": "Build a workflow",
+      "description": "Open Workflow Builder."
+    },
+    "voice": {
+      "title": "Generate voice",
+      "description": "Open Audio Studio."
+    },
+    "thumbnail": {
+      "title": "Create thumbnail",
+      "description": "Open Design Agent."
+    }
+  }
+}
