@@ -71,13 +71,25 @@ jobs:
       - name: Preserve generated lockfile on the isolated feature branch
         if: github.event_name == 'push' && github.ref == 'refs/heads/feat/platform-accounts'
         run: |
-          if ! git diff --quiet -- package-lock.json; then
-            git config user.name 'github-actions[bot]'
-            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          cp package-lock.json /tmp/platform-accounts-lock.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          for attempt in 1 2 3 4 5; do
+            git fetch --no-tags --depth=2 origin feat/platform-accounts
+            git reset --hard FETCH_HEAD
+            cp /tmp/platform-accounts-lock.json package-lock.json
+            if git diff --quiet -- package-lock.json; then
+              echo "Lockfile already current"
+              break
+            fi
             git add package-lock.json
             git commit -m 'chore(accounts): lock authentication dependencies [skip ci]'
-            git push origin HEAD:feat/platform-accounts
-          fi
+            if git push origin HEAD:feat/platform-accounts; then
+              echo "Lockfile checkpoint pushed"
+              break
+            fi
+            if [ "$attempt" = 5 ]; then echo "Lockfile push retry limit reached" >&2; exit 1; fi
+          done
       - name: Clean install using regenerated lockfile
         run: npm ci --no-audit --no-fund
       - name: Contract and runtime configuration tests
