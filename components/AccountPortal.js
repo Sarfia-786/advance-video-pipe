@@ -130,7 +130,8 @@ export default function AccountPortal({ mode, copy, rootPath }) {
           </div>}
           {mode === 'account' && details?.user.id === session?.user?.id && details?.entitlements &&
             <AccountEntitlements key={details.user.id} entitlements={details.entitlements}
-              copy={copy.entitlements} locale={rootPath === '/zh' ? 'zh-CN' : 'en'} />}
+              credits={details.credits} copy={copy.entitlements}
+              locale={rootPath === '/zh' ? 'zh-CN' : 'en'} />}
           {!(mode === 'reset' && invalidLink) && <form className={styles.form} onSubmit={submit}>
             {(mode === 'signup' || mode === 'account') && <label className={styles.field}>
               {copy.name}<input name="name" autoComplete="name" required maxLength={200}
