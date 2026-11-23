@@ -148,8 +148,11 @@ test('real Postgres + SMTP verification + sessions + account replay', { timeout:
   let remaining = await pool.query('SELECT count(*)::int AS n FROM "user" WHERE id=$1', [userId]);
   if (remaining.rows[0].n !== 0) {
     const confirmLink = linkFromEmail(await latestEmail(email, 'Confirm account deletion'));
-    const approved = await auth.handler(new Request(confirmLink, { method: 'GET', redirect: 'manual' }));
-    assert.ok([200, 302, 303].includes(approved.status));
+    const approved = await auth.handler(new Request(confirmLink, {
+      method: 'GET', redirect: 'manual', headers: { Cookie: deleteCookie },
+    }));
+    assert.ok([200, 302, 303, 307, 308].includes(approved.status),
+      'Deletion confirmation status ' + approved.status + ': ' + await approved.text());
   }
   remaining = await pool.query('SELECT count(*)::int AS n FROM "user" WHERE id=$1', [userId]);
   assert.equal(remaining.rows[0].n, 0, 'Auth user must be removed');
