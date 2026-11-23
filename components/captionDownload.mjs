@@ -14,17 +14,17 @@ export function saveCaptionFile(blob, filename) {
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export async function downloadCaptionTrack(track, copy) {
+export async function downloadCaptionTrack(track, copy, format = 'srt') {
   try {
-    const response = await fetch('/api/platform/v1/captions/srt', {
+    const response = await fetch('/api/platform/v1/captions/' + format, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(track),
     });
     if (!response.ok) {
       const { error } = await response.json();
       return captionErrorMessage(error, copy);
     }
-    saveCaptionFile(await response.blob(), 'captions.srt');
-    return copy.done;
+    saveCaptionFile(await response.blob(), 'captions.' + format);
+    return format === 'ass' ? copy.assDone : copy.done;
   } catch {
     return copy.network;
   }

@@ -7,7 +7,7 @@ if (!['localhost', '127.0.0.1'].includes(origin.hostname) || origin.protocol !==
 
 export default defineConfig({
   testDir: './e2e',
-  testMatch: 'accounts.spec.mjs',
+  testMatch: ['accounts.spec.mjs', '*.account.spec.mjs'],
   use: { baseURL: origin.origin },
   webServer: {
     command: 'npm run start -- --hostname 127.0.0.1 --port ' + (origin.port || '80'),
