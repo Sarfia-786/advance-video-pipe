@@ -99,5 +99,6 @@
     "availableCredits": "可用积分",
     "reservedCredits": "预留积分",
     "spentCredits": "已使用积分"
-  }
-}\n
+  },
+  "usage": "用量与积分"
+}
