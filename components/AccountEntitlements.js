@@ -40,6 +40,7 @@ export default function AccountEntitlements({ entitlements, copy, locale }) {
       <dt>{copy.projects}</dt><dd>{limits.projectExpiryDays === null ? copy.persistent : copy.days.replace('{n}', limits.projectExpiryDays)}</dd>
       <dt>{copy.storage}</dt><dd>{numbers.format(limits.storageMiB)} MiB</dd>
       <dt>{copy.voice}</dt><dd>{copy.minutes.replace('{n}', numbers.format(limits.monthlyVoiceMinutes))}</dd>
+      <dt>{copy.concurrency}</dt><dd>{numbers.format(limits.maxConcurrentJobs)}</dd>
       <dt>{copy.watermark}</dt><dd>{capabilities.watermarkRequired ? copy.required : copy.off}</dd>
     </dl>
     {capabilities.usageHistory === 'detailed' && <div>

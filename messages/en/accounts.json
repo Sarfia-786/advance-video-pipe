@@ -70,6 +70,7 @@
     "days": "{n} days",
     "storage": "Cloud storage limit",
     "voice": "Monthly voice allowance",
+    "concurrency": "Simultaneous jobs",
     "minutes": "{n} minutes",
     "watermark": "Export watermark",
     "required": "Required",

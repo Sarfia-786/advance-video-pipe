@@ -41,9 +41,9 @@ const matrix = {
 };
 const limits = {
   free: { projectExpiryDays: 7, workflowTemplateCount: 2, batchMinClips: 0, batchMaxClips: 0,
-    maxOutputHeight: 720, storageMiB: 512, monthlyVoiceMinutes: 5 },
+    maxOutputHeight: 720, storageMiB: 512, monthlyVoiceMinutes: 5, maxConcurrentJobs: 1 },
   premium: { projectExpiryDays: null, workflowTemplateCount: null, batchMinClips: 5, batchMaxClips: 10,
-    maxOutputHeight: 2160, storageMiB: 10240, monthlyVoiceMinutes: 60 },
+    maxOutputHeight: 2160, storageMiB: 10240, monthlyVoiceMinutes: 60, maxConcurrentJobs: 3 },
 };
 
 for (const [plan, subscriptionStatus, accessUntil, effective, status] of [
@@ -80,11 +80,13 @@ test('unknown or contradictory billing state and missing trial or cancellation d
   ]) assert.equal(resolveSubscription(profile, now).plan, 'free');
 });
 
-test('storage and voice quotas accept zero and tier-specific overrides and reject invalid configuration', () => {
+test('service quotas accept zero and tier-specific overrides and reject invalid configuration', () => {
   const profile = { plan: 'premium', subscriptionStatus: 'active' };
-  const env = { PLATFORM_PREMIUM_STORAGE_MIB: '0', PLATFORM_PREMIUM_VOICE_MINUTES: '125', PLATFORM_FREE_VOICE_MINUTES: '9' };
+  const env = { PLATFORM_PREMIUM_STORAGE_MIB: '0', PLATFORM_PREMIUM_VOICE_MINUTES: '125',
+    PLATFORM_FREE_VOICE_MINUTES: '9', PLATFORM_PREMIUM_CONCURRENT_JOBS: '8' };
   assert.equal(getEntitlements(profile, now, env).limits.storageMiB, 0);
   assert.equal(getEntitlements(profile, now, env).limits.monthlyVoiceMinutes, 125);
+  assert.equal(getEntitlements(profile, now, env).limits.maxConcurrentJobs, 8);
   assert.equal(getEntitlements({ plan: 'free' }, now, env).limits.monthlyVoiceMinutes, 9);
   for (const value of ['', '-1', '1.5', '0x10', '9007199254740993']) {
     assert.throws(() => getEntitlements(profile, now, { PLATFORM_PREMIUM_STORAGE_MIB: value }), RangeError);

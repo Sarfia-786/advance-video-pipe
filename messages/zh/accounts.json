@@ -70,6 +70,7 @@
     "days": "{n} 天",
     "storage": "云存储上限",
     "voice": "每月语音额度",
+    "concurrency": "并行任务数上限",
     "minutes": "{n} 分钟",
     "watermark": "导出水印",
     "required": "必须添加",
