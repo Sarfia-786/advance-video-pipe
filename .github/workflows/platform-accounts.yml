@@ -24,7 +24,11 @@ on:
       - 'messages/*/accounts.json'
       - 'tests/platform*'
       - 'tests/support/accountInbox.mjs'
-      - 'e2e/accounts.spec.mjs'
+      - 'e2e/**'
+      - 'playwright.config.mjs'
+      - 'lib/platform/captions/**'
+      - 'components/*Caption*'
+      - 'components/WordTimingEditor*'
       - 'playwright.accounts.config.mjs'
       - 'scripts/migrate-platform-auth.mjs'
       - 'package.json'
@@ -112,6 +116,8 @@ jobs:
           node --test tests/platformAuth.http.mjs
       - name: Install Chromium for account browser tests
         run: npx --no-install playwright install --with-deps --only-shell chromium
+      - name: Verify caption editing, word timing and SRT downloads in Chromium
+        run: npx --no-install playwright test --workers=2
       - name: Verify English and Chinese account journeys in Chromium
         env:
           BETTER_AUTH_URL: http://localhost:3214

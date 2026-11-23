@@ -639,3 +639,7 @@ Built with [Muapi.ai](https://muapi.ai?utm_source=github&utm_medium=readme&utm_c
 
 ---
 *Looking for a free, open-source AI Video Platform? Open Generative AI is an open-source AI image and video generation studio — with no content filters that you can self-host, customize, and extend.*
+
+### Caption editor
+
+Open `/captions` (English) or `/zh/captions` (Chinese) in the web app to edit cue text and timing, preview subtitles, and download a plain SRT file. Both routes work without a provider key. [Implementation and test guide](docs/implementation/FEATURE_MATRIX.md)

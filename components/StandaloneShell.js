@@ -798,6 +798,9 @@ export default function StandaloneShell({ locale = 'en' }) {
 
           {/* Right: Actions */}
           <div className="flex-shrink-0 flex items-center gap-3">
+            <Link href={getLocaleConfig(locale).rootPath + '/captions'} className="text-sm text-white/80 underline">
+              {copy.tabs.captions}
+            </Link>
             <ThemeToggle />
             <div className="flex items-center gap-2.5 bg-white/5 px-3 py-1.5 rounded-full border border-white/5 transition-colors">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />

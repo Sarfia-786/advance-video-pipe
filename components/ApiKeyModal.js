@@ -89,6 +89,11 @@ export default function ApiKeyModal({ onSave, onClose, overlay = false, title, s
             </a>
           </p>
         </form>
+        {!overlay && (
+          <Link href={getLocaleConfig(locale).rootPath + '/captions'} className="mt-4 block text-center text-sm text-white/80 underline">
+            {copy.openCaptions}
+          </Link>
+        )}
       </div>
     </div>
   );
