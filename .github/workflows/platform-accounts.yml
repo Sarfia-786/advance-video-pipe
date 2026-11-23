@@ -5,6 +5,14 @@ on:
   pull_request:
     paths:
       - 'db/migrations/**'
+      - 'lib/platform/projects/**'
+      - 'app/projects/**'
+      - 'app/zh/projects/**'
+      - 'components/ProjectWorkspace*'
+      - 'messages/*/projects.json'
+      - 'scripts/cleanup-platform-projects.mjs'
+      - 'lib/securityHeaders.js'
+      - 'middleware.js'
       - 'lib/platform/accounts/**'
       - 'lib/platform/entitlements/**'
       - 'lib/platform/credits/**'
@@ -95,6 +103,21 @@ jobs:
         run: bash tests/platformAccounts.pg.sh
       - name: Apply maintained Better Auth schema migrations
         run: node scripts/migrate-platform-auth.mjs
+      - name: Verify private project retention, concurrent quota and cleanup on PostgreSQL
+        run: |
+          node scripts/migrate-platform-auth.mjs
+          node --test tests/platformProjects.pg.mjs
+      - name: Start a private S3-compatible bucket for the project HTTP tests
+        env:
+          AWS_ACCESS_KEY_ID: projects-ci
+          AWS_SECRET_ACCESS_KEY: projects-ci-only-password
+          AWS_DEFAULT_REGION: us-east-1
+        run: |
+          docker run -d --name project-minio -p 127.0.0.1:9000:9000 \
+            -e MINIO_ROOT_USER="$AWS_ACCESS_KEY_ID" -e MINIO_ROOT_PASSWORD="$AWS_SECRET_ACCESS_KEY" \
+            minio/minio:RELEASE.2025-04-22T22-12-26Z server /data
+          curl --fail --silent --show-error --retry 30 --retry-delay 1 --retry-connrefused http://127.0.0.1:9000/minio/health/live
+          aws --endpoint-url http://127.0.0.1:9000 s3api create-bucket --bucket projects-ci
       - name: Confirm SMTP test inbox is reachable
         run: |
           for attempt in $(seq 1 30); do
@@ -111,6 +134,12 @@ jobs:
       - name: HTTP smoke of localized account pages and private API boundary
         env:
           AUTH_TRUSTED_IP_HEADER: x-test-ingress-ip
+          PLATFORM_FREE_STORAGE_MIB: '1'
+          PLATFORM_PROJECT_STORAGE: s3
+          PLATFORM_S3_ENDPOINT: http://127.0.0.1:9000
+          PLATFORM_S3_BUCKET: projects-ci
+          PLATFORM_S3_ACCESS_KEY: projects-ci
+          PLATFORM_S3_SECRET_KEY: projects-ci-only-password
         run: |
           node node_modules/next/dist/bin/next start --hostname 127.0.0.1 --port 3000 > /tmp/platform-next.log 2>&1 &
           server_pid=$!
@@ -120,6 +149,7 @@ jobs:
             if [ "$attempt" = 60 ]; then cat /tmp/platform-next.log; exit 1; fi
             sleep 1
           done
+          node --test tests/platformProjects.http.mjs
           node --test tests/platformAuth.http.mjs tests/platformEntitlements.http.mjs
       - name: Install Chromium for account browser tests
         run: npx --no-install playwright install --with-deps --only-shell chromium

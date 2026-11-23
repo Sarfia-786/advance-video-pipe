@@ -40,3 +40,4 @@ out/
 # Browser test artifacts
 /test-results/
 /playwright-report/
+/.private-projects/

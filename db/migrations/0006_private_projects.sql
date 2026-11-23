@@ -54,7 +54,7 @@ ALTER TABLE platform.account_deletions ADD COLUMN IF NOT EXISTS projects_cleaned
 CREATE TABLE IF NOT EXISTS platform.retired_account_audit (
   owner_id text NOT NULL, source text NOT NULL, record_id text NOT NULL,
   record jsonb NOT NULL, archived_at timestamptz NOT NULL DEFAULT now(),
-  PRIMARY KEY(source, record_id)
+  PRIMARY KEY(owner_id, source, record_id)
 );
 CREATE OR REPLACE FUNCTION platform.retain_retired_account_record() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
