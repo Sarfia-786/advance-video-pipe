@@ -103,6 +103,13 @@ test('real Postgres + SMTP verification + sessions + account replay', { timeout:
   const evil = await endpoint('/sign-in/email', { email, password: PASSWORD }, { origin: 'https://evil.example' });
   assert.equal(evil.status, 403, 'Cross-origin login CSRF must be rejected');
 
+  // Expired sessions are denied even if the browser still carries a cookie.
+  await pool.query('UPDATE "session" SET "expiresAt" = now() - interval \'1 day\' WHERE "userId" = $1', [userId]);
+  await assert.rejects(
+    () => getPlatformActor(new Headers({ Cookie: cookie, Origin: BASE })),
+    error => error.code === 'AUTH_REQUIRED' && error.status === 401,
+  );
+
   const resetRequest = await endpoint('/request-password-reset', {
     email, redirectTo: BASE + '/reset-password',
   });
@@ -110,13 +117,40 @@ test('real Postgres + SMTP verification + sessions + account replay', { timeout:
   const resetUrl = linkFromEmail(await latestEmail(email, 'Reset'));
   assert.equal(new URL(resetUrl).origin, BASE);
   assert.ok(resetUrl.includes('/reset-password/'), 'Must include a one-use password reset token');
+  const resetToken = decodeURIComponent(new URL(resetUrl).pathname.split('/').pop());
+  const replacementPassword = 'New!password!for!integration!2026';
+  const reset = await endpoint('/reset-password', { token: resetToken, newPassword: replacementPassword });
+  assert.equal(reset.status, 200, 'Password reset must work with the emailed token: ' + await reset.text());
 
-  // Expired sessions are denied even if the browser still carries a cookie.
-  await pool.query('UPDATE "session" SET "expiresAt" = now() - interval \'1 day\' WHERE "userId" = $1', [userId]);
+  const changedLogin = await endpoint('/sign-in/email', { email, password: replacementPassword });
+  assert.equal(changedLogin.status, 200, 'New password must work');
+  const changedCookie = sessionCookie(changedLogin);
+  assert.equal((await getPlatformActor(new Headers({ Cookie: changedCookie }))).userId, userId);
+  const oldLogin = await endpoint('/sign-in/email', { email, password: PASSWORD });
+  assert.notEqual(oldLogin.status, 200, 'Old password must no longer work');
+
+  const revoke = await endpoint('/revoke-sessions', {}, { cookie: changedCookie });
+  assert.equal(revoke.status, 200, 'Logout across devices must succeed');
   await assert.rejects(
-    () => getPlatformActor(new Headers({ Cookie: cookie, Origin: BASE })),
+    () => getPlatformActor(new Headers({ Cookie: changedCookie })),
     error => error.code === 'AUTH_REQUIRED' && error.status === 401,
   );
+
+  const deleteLogin = await endpoint('/sign-in/email', { email, password: replacementPassword });
+  assert.equal(deleteLogin.status, 200, 'Sign in after session revocation must work');
+  const deleteCookie = sessionCookie(deleteLogin);
+  const deletion = await endpoint('/delete-user', { password: replacementPassword }, { cookie: deleteCookie });
+  assert.equal(deletion.status, 200, 'Password-confirmed deletion should succeed');
+  let remaining = await pool.query('SELECT count(*)::int AS n FROM "user" WHERE id=$1', [userId]);
+  if (remaining.rows[0].n !== 0) {
+    const confirmLink = linkFromEmail(await latestEmail(email, 'Confirm account deletion'));
+    const approved = await auth.handler(new Request(confirmLink, { method: 'GET', redirect: 'manual' }));
+    assert.ok([200, 302, 303].includes(approved.status));
+  }
+  remaining = await pool.query('SELECT count(*)::int AS n FROM "user" WHERE id=$1', [userId]);
+  assert.equal(remaining.rows[0].n, 0, 'Auth user must be removed');
+  const platformRemoved = await pool.query('SELECT count(*)::int AS n FROM platform.user_profiles WHERE user_id=$1', [userId]);
+  assert.equal(platformRemoved.rows[0].n, 0, 'Private profile must be removed');
 
   // Verify that the vendor's persistent rate limiter rejects a login flood.
   let throttled = false;
@@ -126,7 +160,7 @@ test('real Postgres + SMTP verification + sessions + account replay', { timeout:
   }
   assert.equal(throttled, true, 'Auth rate limit must produce HTTP 429');
 
-  t.diagnostic('Verified: signup → local SMTP → verified login → protected plan/credits, replay, invalid/expired cookie, CSRF, recovery email, rate limit.');
+  t.diagnostic('Verified: signup → real SMTP → email verification → login → private plan/credits → idempotency → expired sessions → CSRF → password recovery → revoked sessions → account deletion → rate limit.');
 });
 
 test.after(async () => {
