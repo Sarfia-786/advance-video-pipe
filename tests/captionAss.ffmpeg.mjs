@@ -1,10 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { serializeAss } from '../lib/platform/captions/ass.mjs';
+import { burnCaptionVideo } from '../lib/platform/captions/render.mjs';
+import { getEntitlements } from '../lib/platform/entitlements/policy.mjs';
 
 const width = 270;
 const height = 480;
@@ -40,10 +41,17 @@ test('libass moves the highlight at the corrected boundary and leaves the speake
       text, speakerId: 'Bo', startMs: 1000 + 60 * i, endMs: 1060 + 60 * i, source: 'manual',
     })),
   ];
-  await writeFile(join(dir, 'track.ass'), serializeAss(words));
   execFileSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-f', 'lavfi', '-i',
-    'color=c=black:s=270x480:r=50:d=1.3', '-vf', 'ass=track.ass', '-c:v', 'libx264',
-    '-preset', 'ultrafast', '-qp', '0', '-threads', '1', 'burned.mp4'], { cwd: dir });
+    'color=c=black:s=270x480:r=50:d=1.3', '-f', 'lavfi', '-i', 'sine=f=330:d=1.3', '-c:a', 'aac',
+    '-c:v', 'libx264', '-threads', '1', '-shortest', 'source.mp4'], { cwd: dir });
+  const video = await readFile(join(dir, 'source.mp4'));
+  const actor = { entitlements: getEntitlements({ plan: 'premium', subscriptionStatus: 'active' }) };
+  await assert.rejects(burnCaptionVideo({ entitlements: getEntitlements({}) }, video, { words }), { code: 'PLAN_REQUIRED' });
+  await writeFile(join(dir, 'burned.mp4'), await burnCaptionVideo(actor, video, { words }));
+  const probe = JSON.parse(execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'stream=codec_name,width,height', '-of', 'json', 'burned.mp4'], { cwd: dir }));
+  assert.deepEqual(probe.streams.map(s => s.codec_name), ['h264', 'aac']);
+  assert.equal(probe.streams[0].width, width);
+  assert.equal(probe.streams[0].height, height);
   // Decode samples at 80, 340, 360, 480, 760 and 1,000 ms from the burned MP4.
   const selected = [4, 17, 18, 24, 38, 50].map(n => 'eq(n\\,' + n + ')').join('+');
   const pixels = execFileSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-i', 'burned.mp4', '-vf', 'select=' + selected,
@@ -59,7 +67,18 @@ test('libass moves the highlight at the corrected boundary and leaves the speake
     assert.ok(sample.bottom < height - 36, 'caption should stay above the bottom margin');
   }
   assert.ok(before.center < after.center - 12, 'highlight should move from Keep to going!');
-  assert.deepEqual(frame(2), frame(3), 'the corrected word stays active before its original provider start');
+  assert.ok(Math.abs(after.center - measure(frame(3)).center) < 2, 'the corrected word stays active before its original provider start');
   assert.equal(measure(frame(4)).right, -1);
   assert.ok(wrapped.bottom - wrapped.top > 1.5 * (before.bottom - before.top), 'the second speaker should wrap to multiple lines');
+  for (const preset of ['karaoke', 'boldCenter', 'hormozi']) {
+    const style = { preset, highlightColor: '#99edee' };
+    await writeFile(join(dir, 'styled.mp4'), await burnCaptionVideo(actor, video, { words, style }));
+    const frames = execFileSync('ffmpeg', ['-v', 'error', '-i', 'styled.mp4', '-vf', 'select=eq(n\\,6)+eq(n\\,15)+eq(n\\,38)',
+      '-fps_mode', 'passthrough', '-threads', '1', '-pix_fmt', 'rgb24', '-f', 'rawvideo', 'pipe:1'], { cwd: dir, maxBuffer: 4 * frameBytes });
+    const early = measure(frames.subarray(0, frameBytes)), late = measure(frames.subarray(frameBytes, 2 * frameBytes));
+    assert.equal(measure(frames.subarray(2 * frameBytes)).right, -1, preset + ' clears during pauses');
+    if (preset === 'karaoke') assert.ok(late.highlighted > early.highlighted + 15, 'karaoke progressively fills the active word');
+    if (preset === 'boldCenter') assert.ok(early.top < height / 2 && early.bottom > height / 2, 'bold caption straddles the center');
+    if (preset === 'hormozi') assert.ok(early.highlighted > late.highlighted, 'emphasis settles back to normal size');
+  }
 });

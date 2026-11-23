@@ -1,21 +1,25 @@
 'use client';
 
 import { useMemo, useRef, useState } from 'react';
-import { buildWordTrack, MAX_WORDS, wordSeparator } from '@/lib/platform/captions/words.mjs';
+import { buildWordTrack, MAX_WORDS } from '@/lib/platform/captions/words.mjs';
 import { formatTimestamp, MAX_TIME_MS } from '@/lib/platform/captions/srt.mjs';
 import { captionErrorMessage, downloadCaptionTrack, saveCaptionFile } from './captionDownload.mjs';
+import { normalizeCaptionStyle } from '@/lib/platform/captions/styles.mjs';
+import CaptionAppearance from './CaptionAppearance';
+import CaptionWordPreview from './CaptionWordPreview';
+import SavedCaptionDocuments from './SavedCaptionDocuments';
 import styles from './CaptionEditor.module.css';
 
 function toMilliseconds(value) {
   return /^\d+$/.test(value) ? Number(value) : null;
 }
 
-function readDrafts(rows) {
+function readDrafts(rows, groupWords) {
   try {
     const input = rows.map(({ startMs, endMs, ...word }) => ({
       ...word, startMs: toMilliseconds(startMs), endMs: toMilliseconds(endMs),
     }));
-    return { track: buildWordTrack(input) };
+    return { track: buildWordTrack(input, groupWords) };
   } catch (error) {
     return { error };
   }
@@ -28,10 +32,12 @@ export default function WordTimingEditor({ copy }) {
   const [time, setTime] = useState(0);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
-  const result = useMemo(() => readDrafts(rows), [rows]);
+  const [style, setStyle] = useState(() => normalizeCaptionStyle());
+  const [file, setFile] = useState(null);
+  const result = useMemo(() => readDrafts(rows, style.groupWords), [rows, style.groupWords]);
   const cues = result.track?.cues ?? [];
   const duration = cues.at(-1)?.endMs ?? 0;
-  const playhead = Math.min(time, duration);
+  const playhead = file ? time : Math.min(time, duration);
   const active = cues.find(cue => cue.startMs <= playhead && playhead < cue.endMs);
 
   function changeRows(next) {
@@ -43,11 +49,17 @@ export default function WordTimingEditor({ copy }) {
     changeRows(rows.map(row => row.id === id ? { ...row, [field]: value } : row));
   }
 
+  function openProject(data) {
+    const nextStyle = data?.style === undefined ? style : normalizeCaptionStyle(data.style);
+    const { words } = buildWordTrack(data?.words, nextStyle.groupWords);
+    changeRows(words.map(word => ({ ...word, id: nextId.current++, startMs: String(word.startMs), endMs: String(word.endMs) })));
+    setStyle(nextStyle);
+    setTime(words[0].startMs);
+  }
+
   function importWords() {
     try {
-      const { words } = buildWordTrack(JSON.parse(input)?.words);
-      changeRows(words.map(word => ({ ...word, id: nextId.current++, startMs: String(word.startMs), endMs: String(word.endMs) })));
-      setTime(words[0].startMs);
+      openProject(JSON.parse(input));
       setInput('');
       setMessage(copy.imported);
     } catch (error) {
@@ -64,7 +76,7 @@ export default function WordTimingEditor({ copy }) {
       setMessage(captionErrorMessage(result.error, copy));
       return;
     }
-    const json = JSON.stringify({ words: result.track.words }, null, 2);
+    const json = JSON.stringify({ words: result.track.words, style }, null, 2);
     saveCaptionFile(new Blob([json], { type: 'application/json' }), 'word-timings.json');
     setMessage(copy.timingsSaved);
   }
@@ -78,10 +90,27 @@ export default function WordTimingEditor({ copy }) {
     }
     setBusy(true);
     try {
-      setMessage(await downloadCaptionTrack({ words: result.track.words }, copy, format));
+      setMessage(await downloadCaptionTrack({ words: result.track.words, ...(format === 'ass' ? { style } : {}) }, copy, format));
     } finally {
       setBusy(false);
     }
+  }
+
+  async function burnVideo() {
+    if (!file || busy) return;
+    if (result.error) { setMessage(captionErrorMessage(result.error, copy)); return; }
+    setBusy(true);
+    setMessage(copy.rendering);
+    try {
+      const body = new FormData();
+      body.append('video', file);
+      body.append('track', JSON.stringify({ words: result.track.words, style }));
+      const res = await fetch('/api/platform/v1/captions/render', { method: 'POST', body });
+      if (!res.ok) { setMessage(captionErrorMessage((await res.json()).error, copy)); return; }
+      saveCaptionFile(await res.blob(), 'captioned.mp4');
+      setMessage(copy.renderDone);
+    } catch { setMessage(copy.network); }
+    finally { setBusy(false); }
   }
 
   return (
@@ -122,20 +151,16 @@ export default function WordTimingEditor({ copy }) {
           <button type="button" disabled={busy || rows.length >= MAX_WORDS} onClick={addWord}>{copy.addWord}</button>
         </section>
         <aside className={styles.panel}>
-          <h2>{copy.wordPreview}</h2>
-          <div className={styles.screen}>
-            {active ? <div><small>{active.speakerId}</small><p>{active.words.map((word, index) => (
-              <span key={word.startMs}>{wordSeparator(active.words[index - 1]?.text, word.text)}
-                {word.startMs <= playhead && playhead < word.endMs ? <mark>{word.text}</mark> : word.text}
-              </span>
-            ))}</p></div> : copy.empty}
-          </div>
-          <label>{copy.playhead} <output>{formatTimestamp(playhead)}</output>
-            <input type="range" min="0" max={duration} step="1" value={playhead} onChange={event => setTime(Number(event.target.value))} />
-          </label>
+          <CaptionWordPreview copy={copy} active={active} time={playhead} setTime={setTime} duration={duration} style={style} file={file} />
+          <CaptionAppearance copy={copy} style={style} onChange={setStyle} />
+          <SavedCaptionDocuments copy={copy} style={style} setStyle={setStyle} openProject={openProject}
+            getWords={() => { if (result.error) throw result.error; return result.track.words; }} />
           <button className={styles.primary} disabled={busy || !rows.length}>{busy ? copy.busy : copy.download}</button>
           <button type="submit" value="ass" className={styles.saveTimings} disabled={busy || !rows.length}>{copy.downloadAss}</button>
           <button type="button" className={styles.saveTimings} disabled={busy || !rows.length} onClick={saveTimings}>{copy.saveTimings}</button>
+          <label className={styles.videoInput}>{copy.videoInput}<input type="file" accept="video/mp4,video/quicktime,.mp4,.mov"
+            onChange={e => { setFile(e.target.files[0] || null); setMessage(''); }} /></label>
+          <button type="button" disabled={busy || !file || !rows.length} onClick={burnVideo}>{copy.burnVideo}</button>
           <p role="status">{message}</p>
         </aside>
       </div>

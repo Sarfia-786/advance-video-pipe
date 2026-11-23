@@ -1,15 +1,13 @@
-import { requireCapability } from '@/lib/platform/accounts/authorization.mjs';
-import { getPlatformActor, privateApiError } from '@/lib/platform/accounts/server.mjs';
+import { captionActor, captionApiError } from '@/lib/platform/captions/private.mjs';
 import { exportAss } from '@/lib/platform/captions/export.mjs';
 
 export const runtime = 'nodejs';
 
 export async function POST(request) {
   try {
-    const actor = await getPlatformActor(request.headers);
-    requireCapability(actor, 'captions', 'animated');
+    await captionActor(request);
     return await exportAss(request);
   } catch (error) {
-    return privateApiError(error);
+    return captionApiError(error);
   }
 }

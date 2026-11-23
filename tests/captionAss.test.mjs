@@ -48,3 +48,22 @@ test('ASS takes bounded word-aligned JSON and the existing word-to-SRT download 
   }
   assert.equal(await (await exportSrt(post({ words }))).text(), expectedSrt);
 });
+
+test('style presets share validated controls and preserve source intervals when regrouping', async () => {
+  const { CAPTION_STYLES, normalizeCaptionStyle } = await import('../lib/platform/captions/styles.mjs');
+  for (const preset of Object.keys(CAPTION_STYLES)) {
+    const style = normalizeCaptionStyle({ preset, font: 'Liberation Serif', groupWords: 2, marginX: 14, marginY: 12 });
+    assert.deepEqual(normalizeCaptionStyle(JSON.parse(JSON.stringify(style))), style);
+    const ass = serializeAss(words, style, { width: 1920, height: 1080 });
+    assert.match(ass, /PlayResX: 1920\nPlayResY: 1080/);
+    assert.match(ass, /Style: WordHighlight,Liberation Serif/);
+    assert.match(ass, /,269,269,130,1\n/);
+    assert.ok(ass.includes('0:00:00.45,0:00:00.91'), preset);
+  }
+  const karaoke = serializeAss(words, { preset: 'karaoke' });
+  assert.ok(karaoke.includes('{\\kf29}Hello{\\kf4},{\\kf46} there!'));
+  for (const input of [null, { preset: 'other' }, { font: 'Arial,100' }, { fontSize: 1000 }, { highlight: 'bad' },
+    { highlightColor: '#fff\\n' }, { extra: true }, { groupWords: 0 }, { marginY: -2 }]) {
+    assert.throws(() => serializeAss(words, input), { code: 'CAPTION_STYLE' });
+  }
+});

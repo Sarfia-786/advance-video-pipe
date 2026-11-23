@@ -14,6 +14,7 @@ try {
   await db.query(await sql('0002_account_lifecycle.sql'));
   await db.query(await sql('0003_platform_entitlements.sql'));
   await db.query(await sql('0004_credit_ledger.sql'));
+  await db.query(await sql('0005_caption_documents.sql'));
   console.log('Platform account, entitlements and credit ledger migrations applied');
 } finally {
   db.release(true);
