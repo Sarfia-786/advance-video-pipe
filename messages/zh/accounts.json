@@ -43,5 +43,8 @@
   "openStudio": "打开工作室",
   "loading": "正在加载账户…",
   "passwordHint": "密码至少需要 12 个字符。",
-  "invalidToken": "重置链接无效或已过期，请重新申请。"
+  "invalidToken": "重置链接无效或已过期，请重新申请。",
+  "verificationDone": "邮箱已验证。现在可以登录。",
+  "invalidVerification": "验证链接已失效。请登录以接收新的验证邮件。",
+  "deletionDone": "你的账户已删除。"
 }

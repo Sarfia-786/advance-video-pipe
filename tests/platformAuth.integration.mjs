@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { auth, pool, assertAuthConfigured } from '../lib/platform/accounts/auth.mjs';
 import { getPlatformActor } from '../lib/platform/accounts/server.mjs';
+import { latestEmail, linkFromEmail } from './support/accountInbox.mjs';
 import { requireWorkspaceAccess } from '../lib/platform/accounts/authorization.mjs';
 
-const BASE = 'http://localhost:3000';
+const BASE = process.env.BETTER_AUTH_URL || 'http://localhost:3000';
 const ENDPOINT = BASE + '/api/platform/v1/auth';
-const MAILPIT = process.env.MAILPIT_URL || 'http://localhost:8025';
 const makeId = () => 'test-' + process.pid + '-' + Date.now() + '-' + Math.floor(Math.random() * 100000);
 const PASSWORD = 'Strong#password#for#integration#2026';
 
@@ -20,27 +20,6 @@ function endpoint(path, body, { origin = BASE, cookie } = {}) {
     },
     body: JSON.stringify(body),
   }));
-}
-
-async function latestEmail(recipient, subjectPart) {
-  for (let attempt = 0; attempt < 35; attempt++) {
-    const inbox = await fetch(MAILPIT + '/api/v1/messages').then(r => r.json());
-    for (const item of inbox.messages || []) {
-      const recipients = (item.To || []).map(to => to.Address).join(' ');
-      if (!recipients.includes(recipient) || !item.Subject?.includes(subjectPart)) continue;
-      const message = await fetch(MAILPIT + '/api/v1/message/' + encodeURIComponent(item.ID));
-      assert.equal(message.status, 200);
-      return message.json();
-    }
-    await new Promise(resolve => setTimeout(resolve, 150));
-  }
-  throw new Error('Expected a real SMTP email at local Mailpit for ' + recipient);
-}
-
-function linkFromEmail(message) {
-  const match = message.Text?.match(/https?:\/\/[^\s<>"']+/);
-  assert.ok(match, 'Expected a link in the plain-text email');
-  return match[0].replace(/[)>.,]+$/, '');
 }
 
 function sessionCookie(response) {
@@ -70,6 +49,18 @@ test('real Postgres + SMTP verification + sessions + account replay', { timeout:
 
   const verifyLink = linkFromEmail(await latestEmail(email, 'Verify'));
   assert.equal(new URL(verifyLink).origin, BASE);
+  // Exercise the exact signed link from SMTP after its deadline, then restore the test clock.
+  const expiredVerification = new URL(verifyLink);
+  expiredVerification.searchParams.set('callbackURL', BASE + '/login');
+  t.mock.timers.enable({ apis: ['Date'], now: Date.now() + 2 * 86400 * 1000 });
+  try {
+    const denied = await auth.handler(new Request(expiredVerification));
+    assert.equal(denied.status, 302);
+    assert.equal(new URL(denied.headers.get('location'), BASE).searchParams.get('error'), 'TOKEN_EXPIRED');
+  } finally {
+    t.mock.timers.reset();
+  }
+  assert.equal((await pool.query('SELECT "emailVerified" FROM "user" WHERE id=$1', [userId])).rows[0].emailVerified, false);
   const verification = await auth.handler(new Request(verifyLink, { method: 'GET', redirect: 'manual' }));
   assert.ok([200, 302, 303, 307, 308].includes(verification.status), 'Verification: ' + verification.status);
   const verified = await pool.query('SELECT "emailVerified" FROM "user" WHERE id = $1', [userId]);
@@ -93,6 +84,20 @@ test('real Postgres + SMTP verification + sessions + account replay', { timeout:
   assert.equal(otherSignup.status, 200);
   const other = await pool.query('SELECT id FROM "user" WHERE email = $1', [otherEmail]);
   assert.equal(other.rows.length, 1);
+  const recovery = await endpoint('/request-password-reset', { email: otherEmail, redirectTo: BASE + '/reset-password' });
+  assert.equal(recovery.status, 200);
+  const expiredReset = new URL(linkFromEmail(await latestEmail(otherEmail, 'Reset')));
+  const expiredToken = expiredReset.pathname.split('/').pop();
+  const expiredRow = await pool.query(
+    'UPDATE verification SET "expiresAt"=now() WHERE identifier=$1 AND value=$2',
+    ['reset-password:' + expiredToken, other.rows[0].id],
+  );
+  assert.equal(expiredRow.rowCount, 1);
+  const expiredCallback = await auth.handler(new Request(expiredReset));
+  assert.equal(expiredCallback.status, 302);
+  assert.equal(new URL(expiredCallback.headers.get('location'), BASE).searchParams.get('error'), 'INVALID_TOKEN');
+  const rejectedReset = await endpoint('/reset-password', { token: expiredToken, newPassword: PASSWORD + '2' });
+  assert.equal(rejectedReset.status, 400);
   const otherWorkspace = 'personal:' + other.rows[0].id;
   const identity = {
     getSession: async () => ({ user: { id: userId } }),

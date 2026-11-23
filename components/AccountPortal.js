@@ -13,7 +13,23 @@ export default function AccountPortal({ mode, copy, rootPath }) {
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [details, setDetails] = useState(null);
+  const [invalidLink, setInvalidLink] = useState(false);
+  const verificationReturn = rootPath + '/login?verified=1';
   const { data: session, isPending } = authClient.useSession();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (mode === 'reset' && (!params.get('token') || params.has('error'))) {
+      setInvalidLink(true);
+      setNotice(copy.invalidToken);
+    } else if (mode === 'login' && params.has('error')) {
+      setNotice(copy.invalidVerification);
+    } else if (mode === 'login' && params.get('verified') === '1') {
+      setNotice(copy.verificationDone);
+    } else if (mode === 'login' && params.get('deleted') === '1') {
+      setNotice(copy.deletionDone);
+    }
+  }, [mode, copy]);
 
   useEffect(() => {
     if (mode !== 'account' || !session?.user?.id) return;
@@ -36,7 +52,7 @@ export default function AccountPortal({ mode, copy, rootPath }) {
     try {
       let response;
       if (mode === 'signup') {
-        response = await authClient.signUp.email({ name, email, password });
+        response = await authClient.signUp.email({ name, email, password, callbackURL: verificationReturn });
         if (!response.error) setNotice(copy.verify);
       } else if (mode === 'login') {
         response = await authClient.signIn.email({ email, password });
@@ -54,7 +70,7 @@ export default function AccountPortal({ mode, copy, rootPath }) {
         response = await authClient.updateUser({ name });
         if (!response.error) setNotice(copy.saved);
       }
-      if (response?.error) setNotice(response.error.message || copy.network);
+      if (response?.error) setNotice(mode === 'login' ? copy.loginFailed : copy.network);
     } catch {
       setNotice(copy.network);
     } finally {
@@ -77,7 +93,7 @@ export default function AccountPortal({ mode, copy, rootPath }) {
         if (!response.error) response = await authClient.signOut();
       } else if (which === 'delete') {
         if (confirmation !== 'DELETE') { setNotice(copy.deleteConfirm); return; }
-        response = await authClient.deleteUser({ password });
+        response = await authClient.deleteUser({ password, callbackURL: rootPath + '/login?deleted=1' });
         if (!response.error) { setNotice(copy.deletePending); return; }
       }
       if (response?.error) setNotice(response.error.message || copy.network);
@@ -111,7 +127,7 @@ export default function AccountPortal({ mode, copy, rootPath }) {
             <div><span>{copy.workspace}</span><strong>{details.personalWorkspaceId}</strong></div>
             <div><span>{copy.credits}</span><strong>{details.creditBalance}</strong></div>
           </div>}
-          <form className={styles.form} onSubmit={submit}>
+          {!(mode === 'reset' && invalidLink) && <form className={styles.form} onSubmit={submit}>
             {(mode === 'signup' || mode === 'account') && <label className={styles.field}>
               {copy.name}<input name="name" autoComplete="name" required maxLength={200}
                 value={name} onChange={event => setName(event.target.value)} />
@@ -134,7 +150,7 @@ export default function AccountPortal({ mode, copy, rootPath }) {
             <button className={styles.button} disabled={busy} type="submit">
               {busy ? copy.sending : submitLabel}
             </button>
-          </form>
+          </form>}
           {mode === 'account' && <div>
             <hr className={styles.divider}/>
             <div className={styles.form}>

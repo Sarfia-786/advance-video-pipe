@@ -43,5 +43,8 @@
   "openStudio": "Open Studio",
   "loading": "Loading account…",
   "passwordHint": "Use at least 12 characters.",
-  "invalidToken": "The reset link is invalid or expired. Request a new one."
+  "invalidToken": "The reset link is invalid or expired. Request a new one.",
+  "verificationDone": "Email verified. You can now sign in.",
+  "invalidVerification": "This verification link has expired or is invalid. Sign in to receive a fresh link.",
+  "deletionDone": "Your account was deleted."
 }
