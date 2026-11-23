@@ -1,0 +1,22 @@
+.page { max-width: 70rem; margin: 0 auto; padding: clamp(1rem, 4vw, 3rem); }
+.page a { color: inherit; text-decoration: underline; text-underline-offset: .2rem; }
+.page header { margin: 2rem 0; }
+.page h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 650; letter-spacing: -.045em; }
+.page header p { margin-top: .4rem; }
+.columns { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 1.5rem; align-items: start; }
+.page fieldset, .panel { min-width: 0; padding: 1.2rem; border: 1px solid var(--glass-border); border-radius: .8rem; background: var(--bg-panel); }
+.page fieldset { margin-bottom: 1rem; }
+.page legend, .page h2 { padding: 0 .2rem; font-weight: 650; }
+.times { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: .75rem; }
+.page label { display: block; font-size: .9rem; margin-bottom: .8rem; }
+.page input, .page textarea { display: block; width: 100%; margin-top: .3rem; }
+.page input[type=number], .page textarea { border: 1px solid var(--glass-border); background: var(--bg-card); padding: .55rem .65rem; border-radius: .35rem; color: inherit; }
+.page textarea { resize: vertical; }
+.page button { padding: .5rem .9rem; border: 1px solid currentColor; border-radius: .4rem; font-weight: 550; }
+.page button:disabled { opacity: .45; }
+.page :focus-visible { outline: 2px solid #0891b2; outline-offset: 3px; }
+.page .primary { background: #22d3ee; border-color: #22d3ee; color: #07171b; }
+.panel output { float: right; font-variant-numeric: tabular-nums; }
+.screen { display: grid; place-items: center; min-height: 7rem; margin: 1rem 0; padding: 1rem; background: #111318; color: white; border-radius: .5rem; text-align: center; white-space: pre-line; overflow-wrap: anywhere; }
+.panel p:not(:empty) { margin-top: .8rem; }
+@media (max-width: 45rem) { .columns { grid-template-columns: minmax(0, 1fr); } }
