@@ -99,5 +99,6 @@
     "availableCredits": "Available credits",
     "reservedCredits": "Reserved credits",
     "spentCredits": "Credits spent"
-  }
-}\n
+  },
+  "usage": "Usage and credits"
+}
