@@ -5,9 +5,9 @@ WORKDIR /app
 FROM base AS deps
 COPY package*.json ./
 COPY . .
-# The app builds from git submodules; fail early with a clear message if missing.
+# Check that the workspace packages are present in the build context.
 RUN for d in packages/Vibe-Workflow/packages/workflow-builder packages/Open-Poe-AI/packages/agents packages/Open-AI-Design-Agent/packages/design-agent; do \
-      [ -f "$d/package.json" ] || { echo "ERROR: $d is missing. Submodules are not initialized. Run: git submodule update --init --recursive (or clone with --recurse-submodules), then rebuild." >&2; exit 1; }; \
+      [ -f "$d/package.json" ] || { echo "ERROR: $d is missing. Run the Docker build from the repository root with all workspace packages in the build context." >&2; exit 1; }; \
     done
 RUN npm install
 

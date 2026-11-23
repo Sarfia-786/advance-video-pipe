@@ -22,14 +22,8 @@ Prerequisites: Node.js v18+ (README Quick Start). A MuAPI key is only needed
 for cloud generations; local-model and test work does not need one.
 
 ```bash
-# Clone WITH submodules — this is required, not optional.
-# The workflow, agent, and design-agent packages live in submodules, and a
-# plain clone leaves those directories empty, which breaks the build.
-git clone --recurse-submodules https://github.com/Anil-matcha/Open-Generative-AI.git
-cd Open-Generative-AI
-
-# If you already cloned without --recurse-submodules, run this once:
-git submodule update --init --recursive
+git clone https://github.com/Sarfia-786/advance-video-pipe.git
+cd advance-video-pipe
 
 # Install dependencies AND build the workspace packages
 # (studio, workflow, agents). `npm install` alone is not enough.
@@ -45,8 +39,8 @@ npm run dev            # Web version (Next.js) → http://localhost:3000
 
 If Next.js reports `Couldn't find a 'pages' directory`, check that you are
 in the repo root (the directory containing `app/`, `package.json`, and
-`next.config.mjs`) and that the submodule directories under `packages/` are
-not empty. Re-run `npm run setup` if they are.
+`next.config.mjs`). Run `npm run setup` from the repo root to install
+dependencies and build the workspace packages.
 
 ## Tests
 

@@ -480,12 +480,8 @@ Pick the entry point that matches your goal:
 - **Hosted web version (Next.js)** → `npm run dev`
 
 ```bash
-# Clone the repository (with submodules — required for the workflow + agent packages)
-git clone --recurse-submodules https://github.com/Anil-matcha/Open-Generative-AI.git
-cd Open-Generative-AI
-
-# If you already cloned without --recurse-submodules, run this once:
-# git submodule update --init --recursive
+git clone https://github.com/Sarfia-786/advance-video-pipe.git
+cd advance-video-pipe
 
 # Install dependencies + build workspace packages (studio, workflow, agents).
 # This step is REQUIRED — `npm install` alone is not enough; the workspaces
@@ -499,7 +495,7 @@ npm run dev            # Hosted web version (Next.js) → http://localhost:3000
 
 You'll be prompted to enter your Muapi API key on first use (skip the key if you only plan to use local models).
 
-> **Troubleshooting — `Couldn't find a 'pages' directory`**: this means Next.js can't see the `app/` folder. Confirm you're running `npm run dev` from the repo root (the directory that contains `app/`, `package.json`, and `next.config.mjs`), and that you cloned with submodules. Re-run `npm run setup` if `packages/Vibe-Workflow` or `packages/agents` are empty.
+> **Troubleshooting — `Couldn't find a 'pages' directory`**: this means Next.js can't see the `app/` folder. Confirm you're running `npm run dev` from the repo root (the directory that contains `app/`, `package.json`, and `next.config.mjs`). Run `npm run setup` from the repo root to install dependencies and build the workspace packages.
 
 ### Production Build
 
@@ -510,14 +506,9 @@ npm run start
 
 ### Run with Docker
 
-The image builds from the submodule packages, so clone with submodules first. Without them, `docker compose up --build` stops with `failed to solve: lstat /packages/Vibe-Workflow/packages/workflow-builder: no such file or directory`.
-
 ```bash
-git clone --recurse-submodules https://github.com/Anil-matcha/Open-Generative-AI.git
-cd Open-Generative-AI
-
-# If you already cloned without --recurse-submodules, run this once:
-# git submodule update --init --recursive
+git clone https://github.com/Sarfia-786/advance-video-pipe.git
+cd advance-video-pipe
 
 docker compose up --build
 ```
