@@ -91,6 +91,27 @@ CREATE INDEX IF NOT EXISTS credit_reservations_active_by_user
   ON platform.credit_reservations(user_id, created_at)
   WHERE status = 'reserved';
 
+-- A row lock alone cannot refresh a REPEATABLE READ snapshot. Every append
+-- advances the wallet row so a stale writer receives a serialization failure.
+ALTER TABLE platform.credit_wallets ADD COLUMN IF NOT EXISTS ledger_revision BIGINT NOT NULL DEFAULT 0;
+CREATE OR REPLACE FUNCTION platform.advance_wallet_revision()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  UPDATE platform.credit_wallets SET ledger_revision = ledger_revision + 1 WHERE user_id = NEW.user_id;
+  RETURN NULL;
+END
+$$;
+REVOKE ALL ON FUNCTION platform.advance_wallet_revision() FROM PUBLIC;
+CREATE OR REPLACE TRIGGER advance_wallet_revision
+  AFTER INSERT ON platform.credit_entries FOR EACH ROW EXECUTE FUNCTION platform.advance_wallet_revision();
+
+-- Preserve component boundaries for opaque identifiers, including colons.
+-- Replays of older rows still resolve via (user_id, operation_key, kind).
+CREATE OR REPLACE FUNCTION platform.credit_event_key(p_kind TEXT, p_user_id TEXT, p_operation_key TEXT)
+RETURNS TEXT LANGUAGE sql IMMUTABLE STRICT AS $$
+  SELECT 'credit-v2:' || encode(sha256(convert_to(jsonb_build_array(p_kind, p_user_id, p_operation_key)::text, 'UTF8')), 'hex')
+$$;
+
 CREATE OR REPLACE FUNCTION platform.credit_meter(p_user_id TEXT)
 RETURNS TABLE (
   settled_balance BIGINT,
@@ -181,7 +202,7 @@ BEGIN
     user_id, kind, amount, idempotency_key, operation_key, tool, model, job_id
   ) VALUES (
     p_user_id, 'reserve', p_max_amount,
-    'credit-reserve:' || md5(p_user_id || ':' || p_operation_key),
+    platform.credit_event_key('reserve', p_user_id, p_operation_key),
     p_operation_key, p_tool, p_model, p_job_id
   );
 
@@ -261,7 +282,7 @@ BEGIN
       user_id, kind, amount, idempotency_key, operation_key, reason, tool, model, job_id
     ) VALUES (
       p_user_id, 'capture', -p_actual_amount,
-      'credit-capture:' || md5(p_user_id || ':' || p_operation_key),
+      platform.credit_event_key('capture', p_user_id, p_operation_key),
       p_operation_key, p_reason, v_reservation.tool, v_reservation.model, v_reservation.job_id
     );
   END IF;
@@ -271,7 +292,7 @@ BEGIN
       user_id, kind, amount, idempotency_key, operation_key, reason, tool, model, job_id
     ) VALUES (
       p_user_id, 'release', v_release,
-      'credit-release:' || md5(p_user_id || ':' || p_operation_key),
+      platform.credit_event_key('release', p_user_id, p_operation_key),
       p_operation_key, p_reason, v_reservation.tool, v_reservation.model, v_reservation.job_id
     );
   END IF;
@@ -371,7 +392,7 @@ BEGIN
     user_id, kind, amount, idempotency_key, operation_key, reason, tool, model, job_id, top_up_id
   ) VALUES (
     p_user_id, p_kind, p_amount,
-    'credit-entry:' || md5(p_user_id || ':' || p_kind || ':' || p_operation_key),
+    platform.credit_event_key(p_kind, p_user_id, p_operation_key),
     p_operation_key, p_reason, p_tool, p_model, p_job_id, p_top_up_id
   ) RETURNING id INTO v_id;
 

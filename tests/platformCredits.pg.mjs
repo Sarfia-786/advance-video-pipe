@@ -157,6 +157,45 @@ test('starter grant stays exactly-once across callback replay under the credit s
   });
 });
 
+test('a writer with an older repeatable-read snapshot must retry the whole transaction', async () => {
+  const user = await createUser('credit-snapshot', 10);
+  const tx = await pool.connect();
+  try {
+    await tx.query('BEGIN ISOLATION LEVEL REPEATABLE READ');
+    const initial = await tx.query('SELECT available FROM platform.credit_meter($1)', [user]);
+    assert.equal(initial.rows[0].available, '10');
+    await pool.query("SELECT * FROM platform.reserve_credits($1,'current-job',8)", [user]);
+    await assert.rejects(tx.query("SELECT * FROM platform.reserve_credits($1,'other-job',8)", [user]), { code: '40001' });
+  } finally {
+    await tx.query('ROLLBACK');
+    tx.release();
+  }
+  await assert.rejects(pool.query("SELECT * FROM platform.reserve_credits($1,'other-job',8)", [user]), /insufficient_credits/);
+  assert.equal((await pool.query('SELECT available FROM platform.credit_meter($1)', [user])).rows[0].available, '2');
+});
+
+test('independent wallets can use operation keys containing separators and retry them', async () => {
+  const first = await createUser('credit-scope', 10);
+  const second = first + ':team';
+  users.add(second);
+  await pool.query('SELECT platform.provision_account_created($1,$2,10)', [second, 'signup-' + second]);
+  for (const [user, key] of [[first, 'team:render'], [second, 'render']]) {
+    await pool.query('SELECT * FROM platform.reserve_credits($1,$2,6)', [user, key]);
+    const settle = () => pool.query('SELECT * FROM platform.settle_credit_reservation($1,$2,3)', [user, key]);
+    assert.equal((await settle()).rows[0].available, '7');
+    assert.equal((await settle()).rows[0].available, '7');
+  }
+});
+
+test('a purchase recorded using the previous key format still replays without another grant', async () => {
+  const user = await createUser('credit-upgrade', 0);
+  const original = await pool.query("INSERT INTO platform.credit_entries(user_id, kind, operation_key, amount, idempotency_key) " +
+    "VALUES ($1, 'purchase', 'pack:one', 10, 'credit-entry:' || md5($1 || ':purchase:pack:one')) RETURNING id", [user]);
+  const replay = await pool.query("SELECT * FROM platform.apply_credit_entry($1,'pack:one','purchase',10)", [user]);
+  assert.equal(replay.rows[0].entry_id, original.rows[0].id);
+  assert.equal(replay.rows[0].available, '10');
+});
+
 test.after(async () => {
   for (const userId of users) {
     await pool.query('DELETE FROM platform.user_profiles WHERE user_id=$1', [userId]).catch(() => {});
