@@ -6,6 +6,11 @@
   "CUE_COUNT": "Use between 1 and 500 cues.", "CUE_TIMING": "Use whole milliseconds, in order, with no overlapping cues. End time must follow start time and fit within 99 hours, 59 minutes and 59.999 seconds.",
   "CUE_TEXT": "Enter 1–2,000 characters. Remove blank separator lines and control characters.", "BODY_TOO_LARGE": "The track is too large to export. Split it into smaller tracks.",
   "saveTimings": "Save timing JSON",
+  "downloadAss": "Download word highlights (.ass) · Premium",
+  "assDone": "Highlighted caption track downloaded.",
+  "ASS_TIME_RESOLUTION": "Adjust this word to span at least one 10 ms step in the ASS track.",
+  "AUTH_REQUIRED": "Sign in with a verified Premium account to download word highlights.",
+  "PLAN_REQUIRED": "Word highlights require Premium. You can download SRT on your current plan.",
   "timingsSaved": "Word timing file downloaded.",
   "timingMode": "Timing mode",
   "modes": {

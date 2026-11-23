@@ -71,13 +71,14 @@ export default function WordTimingEditor({ copy }) {
 
   async function download(event) {
     event.preventDefault();
+    const format = event.nativeEvent.submitter?.value === 'ass' ? 'ass' : 'srt';
     if (result.error) {
       setMessage(captionErrorMessage(result.error, copy));
       return;
     }
     setBusy(true);
     try {
-      setMessage(await downloadCaptionTrack({ words: result.track.words }, copy));
+      setMessage(await downloadCaptionTrack({ words: result.track.words }, copy, format));
     } finally {
       setBusy(false);
     }
@@ -133,6 +134,7 @@ export default function WordTimingEditor({ copy }) {
             <input type="range" min="0" max={duration} step="1" value={playhead} onChange={event => setTime(Number(event.target.value))} />
           </label>
           <button className={styles.primary} disabled={busy || !rows.length}>{busy ? copy.busy : copy.download}</button>
+          <button type="submit" value="ass" className={styles.saveTimings} disabled={busy || !rows.length}>{copy.downloadAss}</button>
           <button type="button" className={styles.saveTimings} disabled={busy || !rows.length} onClick={saveTimings}>{copy.saveTimings}</button>
           <p role="status">{message}</p>
         </aside>

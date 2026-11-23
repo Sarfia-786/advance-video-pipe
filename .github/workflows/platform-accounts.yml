@@ -31,6 +31,10 @@ on:
       - 'lib/platform/captions/**'
       - 'components/*Caption*'
       - 'components/WordTimingEditor*'
+      - 'components/captionDownload.mjs'
+      - 'messages/*/captions.json'
+      - 'tests/caption*'
+      - 'tests/fixtures/captionWords.mjs'
       - 'playwright.accounts.config.mjs'
       - 'scripts/migrate-platform-auth.mjs'
       - 'package.json'
@@ -116,6 +120,13 @@ jobs:
             sleep 1
           done
           node --test tests/platformAuth.http.mjs tests/platformEntitlements.http.mjs
+      - name: Verify timed caption pixels with FFmpeg and libass
+        run: |
+          if ! command -v ffmpeg >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y ffmpeg
+          fi
+          node --test tests/captionAss.ffmpeg.mjs
       - name: Install Chromium for account browser tests
         run: npx --no-install playwright install --with-deps --only-shell chromium
       - name: Verify caption editing, word timing and SRT downloads in Chromium

@@ -6,7 +6,7 @@
 | --- | --- | --- | --- | --- |
 | Plain subtitles | Both | `/captions`, `/zh/captions`; POST `/api/platform/v1/captions/srt` | Stateless, no keys | Node tests and Chromium download in `tests/captionsSrt.test.mjs` and `e2e/captions.spec.mjs`; implemented in PR #2 |
 | Word timing | Both | Caption editor → timed words → SRT or timing JSON | Imported provider timestamps or manual entry | Implemented for #3. Unit, HTTP and EN/ZH browser cases use a two-speaker fixture. |
-| Animated captions | Premium | Timed words → render | FFmpeg/libass | Queued in issue #15. |
+| Animated captions | Premium | Word timing → Download word highlights (.ass) | FFmpeg/libass | Corrected word highlights and decoded-frame tests in #15. Timeline export depends on #14. |
 | Accounts and entitlements | Both tiers | Studio → Account, `/zh/account`, `/api/platform/v1/me` | PostgreSQL sessions and subscription state | #4 and #5 cover account lifecycle, tier changes, limits and workspace isolation |
 | Dashboard and projects | 7-day projects / persistent projects, folders, history and teams | Shell and project pages → platform API | PostgreSQL and private object storage | #7–#9 cover storage, expiry, collaboration and the dashboard |
 | AI, workflows and batch | BYOK/local, manual and 2 templates / managed, 3 pipelines, 5–10 clips | Chat, scene editor and graph → persistent jobs | Existing workspace packages, providers, workers and credits | Planned; validate scenes, retry and single charge |
@@ -24,6 +24,19 @@ In either caption editor, choose **Word timing**. Paste JSON from an alignment s
 The existing SRT endpoint also accepts an object with a single `words` array. Supply 1–1,000 ordered entries such as `{"text":"Hello","startMs":120,"endMs":410,"speakerId":"Ana"}`. Times are integer milliseconds with an exclusive end. Intervals can touch; gaps are silent. This single track rejects overlapping intervals. Raw provider entries default to `source: "provider"`. Manual entries use `source: "manual"`. Editing an imported interval keeps both the current interval and its `providerTiming` and displays `source: "corrected"`. Returning to the original interval restores its provider label. Source describes the submitted metadata.
 
 Cues start at the first real word and end at the last. Silence, a speaker change, or eight words starts a new cue. Missing intervals return HTTP 422 with an error code and, where available, a one-based word index. Issue #13 wires live voice-provider output to this contract. Issue #15 handles burning word highlights into video.
+
+### Highlighted ASS captions
+
+In **Word timing**, a verified Premium member can download a UTF-8 ASS track. The file uses the corrected start and end of each word, keeps neighboring words visible, and clears the caption during pauses. The preset uses a 1080 × 1920 canvas with a bottom safe margin and automatic line wrapping.
+
+`POST /api/platform/v1/captions/ass` accepts the same `words` input as the SRT export. It checks the session's current `captions` capability before reading the track. ASS uses 10 ms ticks, so both ends round up to the next tick when needed. An interval that collapses to a single timestamp returns 422 with `ASS_TIME_RESOLUTION` and the word number.
+
+With the downloaded track beside a local video, burn the highlight into an MP4 with FFmpeg and libass. The timeline worker in #14 can use the same serializer after checking the account's render entitlement.
+
+```sh
+ffmpeg -i input.mp4 -vf ass=captions.ass -c:v libx264 -c:a copy highlighted.mp4
+node --test tests/captionAss.test.mjs tests/captionAss.ffmpeg.mjs
+```
 
 ### Account entitlements
 

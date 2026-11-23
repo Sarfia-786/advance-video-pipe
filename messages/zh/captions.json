@@ -6,6 +6,11 @@
   "CUE_COUNT": "请使用 1 至 500 条字幕。", "CUE_TIMING": "请按时间顺序输入整数毫秒，字幕不能重叠。结束时间须晚于开始时间，且不得超过 99 小时 59 分 59.999 秒。",
   "CUE_TEXT": "请输入 1 至 2,000 个字符，删除空白分隔行和控制字符。", "BODY_TOO_LARGE": "字幕轨道过大。请拆分成较小的轨道后再导出。",
   "saveTimings": "保存逐词时间 JSON",
+  "downloadAss": "下载逐词高亮字幕（.ass）· 高级版",
+  "assDone": "已下载逐词高亮字幕。",
+  "ASS_TIME_RESOLUTION": "请调整这个词的时间，使其在 ASS 字幕中至少跨过一个 10 毫秒的刻度。",
+  "AUTH_REQUIRED": "请使用已验证的高级版账户登录，以下载逐词高亮字幕。",
+  "PLAN_REQUIRED": "逐词高亮字幕需要高级版。当前套餐可下载 SRT 字幕。",
   "timingsSaved": "已下载逐词时间文件。",
   "timingMode": "时间模式",
   "modes": {
