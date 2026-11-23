@@ -1,3 +1,5 @@
+> **Current implementation:** The historical first-checkpoint notes below are preserved for handoff. The subsequent maintained-auth, session, email, bilingual account UI and deletion implementation now lives in [PLATFORM_AUTH.md](PLATFORM_AUTH.md) with commands and deployment constraints. Use draft PR #22's most recent CI run for actual verification results.
+
 # Platform accounts — first checkpoint (#4)
 
 Branch: \`feat/platform-accounts\`, based on main. Follow PR #2 for independent milestones.

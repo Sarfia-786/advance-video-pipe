@@ -94,6 +94,8 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Contract and runtime configuration tests
         run: node --test tests/platformAccounts.test.mjs tests/platformAuthConfig.test.mjs
+      - name: Full Node regression suite
+        run: npm test
       - name: Migrate and test fresh/populated platform schema
         run: bash tests/platformAccounts.pg.sh
       - name: Apply maintained Better Auth schema migrations
