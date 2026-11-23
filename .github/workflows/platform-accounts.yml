@@ -90,6 +90,8 @@ jobs:
         run: bash tests/platformAccounts.pg.sh
       - name: Apply maintained Better Auth schema migrations
         run: node scripts/migrate-platform-auth.mjs
+      - name: Verify competing credit reservations and settlement retries in PostgreSQL
+        run: node --test tests/platformCredits.pg.mjs
       - name: Confirm SMTP test inbox is reachable
         run: |
           for attempt in $(seq 1 30); do

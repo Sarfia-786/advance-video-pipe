@@ -126,7 +126,9 @@ export default function AccountPortal({ mode, copy, rootPath }) {
             <div><span>{copy.status}</span><strong>{details.user.emailVerified ? copy.verified : copy.unverified}</strong></div>
             <div><span>{copy.plan}</span><strong>{copy.entitlements.plans[details.plan]}</strong></div>
             <div><span>{copy.workspace}</span><strong>{details.personalWorkspaceId}</strong></div>
-            <div><span>{copy.credits}</span><strong>{details.creditBalance}</strong></div>
+            <div><span>{copy.credits}</span><strong>{details.creditUsage.available}</strong></div>
+            <div><span>{copy.reservedCredits}</span><strong>{details.creditUsage.reserved}</strong></div>
+            <div><span>{copy.spentCredits}</span><strong>{details.creditUsage.spent}</strong></div>
           </div>}
           {mode === 'account' && details?.user.id === session?.user?.id && details?.entitlements &&
             <AccountEntitlements key={details.user.id} entitlements={details.entitlements}
