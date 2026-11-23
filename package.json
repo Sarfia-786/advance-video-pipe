@@ -125,7 +125,10 @@
     "react-hot-toast": "^2.4.1",
     "studio": "*",
     "workflow-builder": "file:./packages/Vibe-Workflow/packages/workflow-builder",
-    "xtend": "^4.0.2"
+    "xtend": "^4.0.2",
+    "better-auth": "1.7.27",
+    "nodemailer": "^7.0.11",
+    "pg": "^8.16.3"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

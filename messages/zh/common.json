@@ -66,6 +66,7 @@
     "missingKeyError": "请输入您的 API 密钥",
     "submit": "开始使用",
     "needKey": "还没有密钥？",
+    "openAccount": "账户与设置",
     "getOneFree": "免费获取 →"
   }
 }

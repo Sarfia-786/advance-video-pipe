@@ -66,6 +66,7 @@
     "missingKeyError": "Please enter your API key",
     "submit": "Get Started",
     "needKey": "Need a key?",
+    "openAccount": "Account and settings",
     "getOneFree": "Get one free →"
   }
 }

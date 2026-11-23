@@ -1186,6 +1186,10 @@ export default function StandaloneShell({ locale = 'en' }) {
             <p className="text-white/40 text-[13px] mb-8">
               {copy.settingsModal.subtitle}
             </p>
+            <Link href={getLocaleConfig(locale).rootPath + '/account'}
+              className="mb-6 block text-sm text-cyan-300 underline">
+              {copy.apiKeyModal.openAccount}
+            </Link>
 
             <div className="space-y-4 mb-8">
               <div className="bg-white/5 border border-white/[0.03] rounded-md p-4">
