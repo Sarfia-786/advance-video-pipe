@@ -6,12 +6,32 @@ on:
     paths:
       - 'db/migrations/**'
       - 'lib/platform/accounts/**'
-      - 'tests/platformAccounts.test.mjs'
-      - 'tests/platformAccounts.pg.sh'
+      - 'app/api/platform/v1/**'
+      - 'app/account/**'
+      - 'app/login/**'
+      - 'app/signup/**'
+      - 'app/forgot-password/**'
+      - 'app/reset-password/**'
+      - 'app/zh/account/**'
+      - 'app/zh/login/**'
+      - 'app/zh/signup/**'
+      - 'app/zh/forgot-password/**'
+      - 'app/zh/reset-password/**'
+      - 'components/AccountPortal*'
+      - 'messages/*/accounts.json'
+      - 'tests/platform*'
+      - 'scripts/migrate-platform-auth.mjs'
+      - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/platform-accounts.yml'
+
+permissions:
+  contents: write
+
 jobs:
   accounts:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     services:
       postgres:
         image: postgres:16
@@ -26,15 +46,56 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
+      mailpit:
+        image: axllent/mailpit:latest
+        ports:
+          - 1025:1025
+          - 8025:8025
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/platform_test
       PGSSLMODE: disable
+      BETTER_AUTH_SECRET: local-ci-only-not-for-production-0123456789abcdef
+      BETTER_AUTH_URL: http://localhost:3000
+      PLATFORM_STARTER_CREDITS: '25'
+      SMTP_HOST: localhost
+      SMTP_PORT: '1025'
+      SMTP_FROM: 'Studio Tests <noreply@example.test>'
+      MAILPIT_URL: http://localhost:8025
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Contract unit tests
-        run: node --test tests/platformAccounts.test.mjs
-      - name: PostgreSQL migration and provisioning tests
+      - name: Resolve exact npm dependency tree without running install scripts
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Preserve generated lockfile on the isolated feature branch
+        if: github.event_name == 'push' && github.ref == 'refs/heads/feat/platform-accounts'
+        run: |
+          if ! git diff --quiet -- package-lock.json; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add package-lock.json
+            git commit -m 'chore(accounts): lock authentication dependencies [skip ci]'
+            git push origin HEAD:feat/platform-accounts
+          fi
+      - name: Clean install using regenerated lockfile
+        run: npm ci --no-audit --no-fund
+      - name: Contract and runtime configuration tests
+        run: node --test tests/platformAccounts.test.mjs tests/platformAuthConfig.test.mjs
+      - name: Migrate and test fresh/populated platform schema
         run: bash tests/platformAccounts.pg.sh
+      - name: Apply maintained Better Auth schema migrations
+        run: node scripts/migrate-platform-auth.mjs
+      - name: Confirm SMTP test inbox is reachable
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://localhost:8025/api/v1/messages >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          exit 1
+      - name: Live signup, email verification, login, session and rate-limit checks
+        run: node --test tests/platformAuth.integration.mjs
+      - name: Build project workspaces
+        run: npm run build:packages
+      - name: Verify Next production build
+        run: npm run build
