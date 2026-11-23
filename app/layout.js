@@ -1,12 +1,7 @@
+import '@fontsource-variable/inter';
 import './globals.css';
-import { Inter } from "next/font/google";
 import { headers } from 'next/headers';
 import { getLocaleConfig } from '@/lib/locales';
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-});
 
 export const metadata = {
   title: 'Open Generative AI — Free AI Image & Video Studio',
@@ -26,7 +21,7 @@ export default async function RootLayout({ children }) {
         {/* Apply the saved theme before first paint to avoid a dark flash. */}
         <script dangerouslySetInnerHTML={{ __html: "try{if(localStorage.getItem('theme')==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}" }} />
       </head>
-      <body className={inter.variable}>{children}</body>
+      <body>{children}</body>
     </html>
   );
 }

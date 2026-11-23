@@ -9,7 +9,7 @@ COPY . .
 RUN for d in packages/Vibe-Workflow/packages/workflow-builder packages/Open-Poe-AI/packages/agents packages/Open-AI-Design-Agent/packages/design-agent; do \
       [ -f "$d/package.json" ] || { echo "ERROR: $d is missing. Run the Docker build from the repository root with all workspace packages in the build context." >&2; exit 1; }; \
     done
-RUN npm ci
+RUN ELECTRON_SKIP_BINARY_DOWNLOAD=1 npm ci --no-audit --no-fund
 
 # Build sub-packages
 FROM deps AS builder
