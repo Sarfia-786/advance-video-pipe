@@ -62,6 +62,8 @@ CREATE TABLE IF NOT EXISTS platform.account_events (
 CREATE OR REPLACE FUNCTION platform.provision_account_created(
   p_user_id TEXT, p_event_id TEXT, p_starter_credits BIGINT
 ) RETURNS VOID LANGUAGE plpgsql AS $fn$
+DECLARE
+  v_first_account_event BOOLEAN := FALSE;
 BEGIN
   IF p_user_id IS NULL OR length(p_user_id) NOT BETWEEN 1 AND 256 OR
      p_event_id IS NULL OR length(p_event_id) NOT BETWEEN 1 AND 256 OR
@@ -77,6 +79,8 @@ BEGIN
 
   INSERT INTO platform.account_events(event_id, event_type, user_id)
     VALUES (p_event_id, 'account.created', p_user_id) ON CONFLICT DO NOTHING;
+  -- Save FOUND immediately: even a zero-credit grant is consumed exactly once.
+  v_first_account_event := FOUND;
 
   IF EXISTS (
     SELECT 1 FROM platform.account_events
@@ -96,7 +100,7 @@ BEGIN
   INSERT INTO platform.credit_wallets(user_id) VALUES (p_user_id)
     ON CONFLICT (user_id) DO NOTHING;
 
-  IF p_starter_credits > 0 THEN
+  IF v_first_account_event AND p_starter_credits > 0 THEN
     INSERT INTO platform.credit_entries(user_id, kind, amount, idempotency_key)
       VALUES (p_user_id, 'starter_grant', p_starter_credits, 'signup:' || p_user_id)
       ON CONFLICT (idempotency_key) DO NOTHING;
