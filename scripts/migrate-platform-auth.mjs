@@ -12,6 +12,7 @@ try {
   const { runMigrations } = await getMigrations(auth.options);
   await runMigrations();
   await db.query(await sql('0002_account_lifecycle.sql'));
+  await db.query(await sql('0003_platform_entitlements.sql'));
   console.log('Platform account and Better Auth migrations applied');
 } finally {
   db.release(true);

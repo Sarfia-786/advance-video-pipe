@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { authClient } from '@/lib/platform/accounts/client.mjs';
+import AccountEntitlements from './AccountEntitlements';
 import styles from './AccountPortal.module.css';
 
 export default function AccountPortal({ mode, copy, rootPath }) {
@@ -123,10 +124,13 @@ export default function AccountPortal({ mode, copy, rootPath }) {
           {mode === 'account' && details && <div className={styles.details}>
             <div><span>{copy.email}</span><strong>{details.user.email}</strong></div>
             <div><span>{copy.status}</span><strong>{details.user.emailVerified ? copy.verified : copy.unverified}</strong></div>
-            <div><span>{copy.plan}</span><strong>{details.plan}</strong></div>
+            <div><span>{copy.plan}</span><strong>{copy.entitlements.plans[details.plan]}</strong></div>
             <div><span>{copy.workspace}</span><strong>{details.personalWorkspaceId}</strong></div>
             <div><span>{copy.credits}</span><strong>{details.creditBalance}</strong></div>
           </div>}
+          {mode === 'account' && details?.user.id === session?.user?.id && details?.entitlements &&
+            <AccountEntitlements key={details.user.id} entitlements={details.entitlements}
+              copy={copy.entitlements} locale={rootPath === '/zh' ? 'zh-CN' : 'en'} />}
           {!(mode === 'reset' && invalidLink) && <form className={styles.form} onSubmit={submit}>
             {(mode === 'signup' || mode === 'account') && <label className={styles.field}>
               {copy.name}<input name="name" autoComplete="name" required maxLength={200}

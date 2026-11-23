@@ -46,5 +46,52 @@
   "invalidToken": "The reset link is invalid or expired. Request a new one.",
   "verificationDone": "Email verified. You can now sign in.",
   "invalidVerification": "This verification link has expired or is invalid. Sign in to receive a fresh link.",
-  "deletionDone": "Your account was deleted."
+  "deletionDone": "Your account was deleted.",
+  "entitlements": {
+    "plans": {
+      "free": "Free",
+      "premium": "Premium"
+    },
+    "limits": "Plan and limits",
+    "subscription": "Subscription status",
+    "statuses": {
+      "free": "Free",
+      "active": "Active",
+      "trialing": "In trial",
+      "past_due": "Past due",
+      "canceling": "Canceling",
+      "canceled": "Canceled",
+      "expired": "Expired",
+      "payment_failed": "Payment failed"
+    },
+    "accessUntil": "Access period ends",
+    "projects": "Project retention",
+    "persistent": "Persistent",
+    "days": "{n} days",
+    "storage": "Cloud storage limit",
+    "voice": "Monthly voice allowance",
+    "minutes": "{n} minutes",
+    "watermark": "Export watermark",
+    "required": "Required",
+    "off": "Off",
+    "history": "Credit history",
+    "date": "Date",
+    "activity": "Activity",
+    "credits": "Credits",
+    "noEntries": "No credit activity yet.",
+    "more": "Load older entries",
+    "loading": "Loading history…",
+    "historyError": "Couldn’t load credit history. Try again.",
+    "accessChanged": "Your access has changed. Refresh this page to see your current plan.",
+    "kinds": {
+      "starter_grant": "Signup credits",
+      "purchase": "Credit purchase",
+      "subscription": "Subscription credits",
+      "reserve": "Reservation",
+      "capture": "Usage charge",
+      "release": "Reservation released",
+      "refund": "Refund",
+      "adjustment": "Adjustment"
+    }
+  }
 }

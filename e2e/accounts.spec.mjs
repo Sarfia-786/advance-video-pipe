@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { randomInt, randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
+import pg from 'pg';
 import { latestEmail, linkFromEmail } from '../tests/support/accountInbox.mjs';
 
 for (const [locale, root] of [['en', ''], ['zh', '/zh']]) {
@@ -41,6 +42,24 @@ for (const [locale, root] of [['en', ''], ['zh', '/zh']]) {
     const profile = await (await me()).json();
     expect(profile.plan).toBe('free');
     expect(profile.creditBalance).toBe(process.env.PLATFORM_STARTER_CREDITS || '25');
+    const access = copy.entitlements;
+    await expect(page.getByRole('heading', { name: access.limits })).toBeVisible();
+    await expect(page.getByText(access.days.replace('{n}', 7), { exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: access.history })).toHaveCount(0);
+    const db = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+    try {
+      await db.query("UPDATE platform.user_profiles SET plan='premium', subscription_status='trialing', " +
+        "access_until=now() + interval '1 day' WHERE user_id=$1", [profile.user.id]);
+      await page.reload();
+      await expect(page.getByText(access.statuses.trialing, { exact: true })).toBeVisible();
+      await expect(page.getByText(access.persistent, { exact: true })).toBeVisible();
+      await press(access.history);
+      const ledger = page.getByRole('table', { name: access.history });
+      await expect(ledger.getByText(access.kinds.starter_grant, { exact: true })).toBeVisible();
+      await expect(ledger.getByRole('cell', { name: profile.creditBalance, exact: true })).toBeVisible();
+    } finally {
+      await db.end();
+    }
     const workspaceURL = '/api/platform/v1/workspaces/' + encodeURIComponent(profile.personalWorkspaceId);
     expect((await (await context.request.get(workspaceURL)).json()).workspace.role).toBe('owner');
     expect((await context.request.get('/api/platform/v1/workspaces/personal%3Aunrelated')).status()).toBe(404);

@@ -1,11 +1,12 @@
 name: Platform accounts foundation
 on:
   push:
-    branches: [feat/platform-accounts]
+    branches: [feat/platform-accounts, feat/platform-entitlements]
   pull_request:
     paths:
       - 'db/migrations/**'
       - 'lib/platform/accounts/**'
+      - 'lib/platform/entitlements/**'
       - 'app/api/platform/v1/**'
       - 'app/account/**'
       - 'app/login/**'
@@ -18,6 +19,7 @@ on:
       - 'app/zh/forgot-password/**'
       - 'app/zh/reset-password/**'
       - 'components/AccountPortal*'
+      - 'components/AccountEntitlements*'
       - 'components/ApiKeyModal.js'
       - 'components/StandaloneShell.js'
       - 'messages/*/common.json'
@@ -113,7 +115,7 @@ jobs:
             if [ "$attempt" = 60 ]; then cat /tmp/platform-next.log; exit 1; fi
             sleep 1
           done
-          node --test tests/platformAuth.http.mjs
+          node --test tests/platformAuth.http.mjs tests/platformEntitlements.http.mjs
       - name: Install Chromium for account browser tests
         run: npx --no-install playwright install --with-deps --only-shell chromium
       - name: Verify caption editing, word timing and SRT downloads in Chromium

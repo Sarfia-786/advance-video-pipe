@@ -11,6 +11,7 @@ export async function GET(request) {
       user: { id: actor.session.user.id, name: actor.session.user.name,
               email: actor.session.user.email, emailVerified: actor.session.user.emailVerified },
       plan: actor.plan,
+      entitlements: actor.entitlements,
       personalWorkspaceId: actor.workspaceId,
       creditBalance: actor.creditBalance,
     });
