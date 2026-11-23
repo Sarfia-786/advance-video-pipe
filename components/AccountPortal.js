@@ -184,6 +184,7 @@ export default function AccountPortal({ mode, copy, rootPath }) {
           {mode !== 'login' && <Link href={rootPath + '/login'}>{copy.haveAccount}</Link>}
           {mode !== 'recover' && <Link href={rootPath + '/forgot-password'}>{copy.forgot}</Link>}
           <Link href={rootPath + '/account'}>{copy.account}</Link>
+          <Link href={rootPath + '/usage'}>{copy.usage}</Link>
         </nav>
       </section>
     </div>
