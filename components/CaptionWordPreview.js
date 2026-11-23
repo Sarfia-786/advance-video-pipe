@@ -58,7 +58,7 @@ export default function CaptionWordPreview({ copy, active, time, setTime, durati
         onTimeUpdate={({ currentTarget: video }) => setTime(Math.round(video.currentTime * 1000))} />}
       {active ? <p className={styles.overlay} style={caption}>{active.words.map((word, i) => <span key={word.startMs}>
         {i > 0 && word.lineBreakBefore ? <br /> : wordSeparator(active.words[i - 1]?.text, word.text)}{wordText(word)}
-      </span>)}</p> : <span className={styles.silent}>{copy.empty}</span>}
+      </span>)}</p> : !src && <span className={styles.silent}>{copy.empty}</span>}
     </div>
     {active && <small>{active.speakerId}</small>}
     {src && <button type="button" onClick={() => { const v = player.current; if (v.paused) v.play().catch(() => {}); else v.pause(); }}>{copy.playPause}</button>}

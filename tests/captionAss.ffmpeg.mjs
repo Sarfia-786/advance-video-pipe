@@ -82,3 +82,29 @@ test('libass moves the highlight at the corrected boundary and leaves the speake
     if (preset === 'hormozi') assert.ok(early.highlighted > late.highlighted, 'emphasis settles back to normal size');
   }
 });
+
+test('phone rotation is applied once and an explicit break adds a visible line to the MP4', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'caption-rotation-'));
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  execFileSync('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=s=480x270:r=25:d=0.5',
+    '-c:v', 'libx264', '-threads', '1', 'source.mp4'], { cwd: dir });
+  execFileSync('ffmpeg', ['-v', 'error', '-display_rotation:v:0', '90', '-i', 'source.mp4', '-c', 'copy', 'phone.mp4'], { cwd: dir });
+  const video = await readFile(join(dir, 'phone.mp4'));
+  const actor = { entitlements: getEntitlements({ plan: 'premium', subscriptionStatus: 'active' }) };
+  const heights = [];
+  for (const lineBreakBefore of [false, true]) {
+    const words = [{ text: 'First', speakerId: 'A', startMs: 0, endMs: 200 },
+      { text: 'line.', speakerId: 'A', startMs: 200, endMs: 500, lineBreakBefore }];
+    await writeFile(join(dir, 'result.mp4'), await burnCaptionVideo(actor, video, { words }));
+    const info = JSON.parse(execFileSync('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries',
+      'stream=width,height:stream_side_data=rotation', '-of', 'json', 'result.mp4'], { cwd: dir })).streams[0];
+    assert.equal(info.width, width);
+    assert.equal(info.height, height);
+    assert.equal(info.side_data_list?.find(item => item.rotation)?.rotation ?? 0, 0);
+    const rgb = execFileSync('ffmpeg', ['-v', 'error', '-i', 'result.mp4', '-frames:v', '1',
+      '-threads', '1', '-pix_fmt', 'rgb24', '-f', 'rawvideo', 'pipe:1'], { cwd: dir, maxBuffer: 2 * frameBytes });
+    const bounds = measure(rgb);
+    heights.push(bounds.bottom - bounds.top);
+  }
+  assert.ok(heights[1] > heights[0] * 1.5);
+});
