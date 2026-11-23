@@ -7,6 +7,7 @@ import { latestEmail, linkFromEmail } from '../tests/support/accountInbox.mjs';
 for (const [locale, root] of [['en', ''], ['zh', '/zh']]) {
   test('verify, edit, recover and delete an account in ' + locale, async ({ page, context }) => {
     const copy = JSON.parse(await readFile(new URL('../messages/' + locale + '/accounts.json', import.meta.url), 'utf8'));
+    const usageCopy = JSON.parse(await readFile(new URL('../messages/' + locale + '/usage.json', import.meta.url), 'utf8'));
     // The loopback test server models an ingress which overwrites the client-IP header.
     await context.setExtraHTTPHeaders({ 'x-test-ingress-ip': '192.0.2.' + randomInt(1, 255) });
     const email = randomUUID() + '@example.test';
@@ -46,6 +47,16 @@ for (const [locale, root] of [['en', ''], ['zh', '/zh']]) {
     await expect(page.getByRole('heading', { name: access.limits })).toBeVisible();
     await expect(page.getByText(access.days.replace('{n}', 7), { exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: access.history })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: copy.usage, exact: true })).toHaveAttribute('href', root + '/usage');
+    const usagePage = await context.newPage();
+    await usagePage.goto(root + '/usage');
+    await expect(usagePage.getByRole('heading', { name: usageCopy.title, exact: true })).toBeVisible();
+    await expect(usagePage.getByText(usageCopy.available, { exact: true })).toBeVisible();
+    await expect(usagePage.getByText(usageCopy.reserved, { exact: true })).toBeVisible();
+    await expect(usagePage.getByText(usageCopy.freeHistory, { exact: true })).toBeVisible();
+    await expect(usagePage.getByRole('link', { name: usageCopy.account, exact: true }))
+      .toHaveAttribute('href', root + '/account');
+    await usagePage.close();
     const db = new pg.Pool({ connectionString: process.env.DATABASE_URL });
     try {
       await db.query("UPDATE platform.user_profiles SET plan='premium', subscription_status='trialing', " +
@@ -57,6 +68,12 @@ for (const [locale, root] of [['en', ''], ['zh', '/zh']]) {
       const ledger = page.getByRole('table', { name: access.history });
       await expect(ledger.getByText(access.kinds.starter_grant, { exact: true })).toBeVisible();
       await expect(ledger.getByRole('cell', { name: profile.creditBalance, exact: true })).toBeVisible();
+      const premiumUsagePage = await context.newPage();
+      await premiumUsagePage.goto(root + '/usage');
+      await premiumUsagePage.getByRole('button', { name: usageCopy.loadHistory, exact: true }).click();
+      const usageLedger = premiumUsagePage.getByRole('table', { name: usageCopy.history });
+      await expect(usageLedger.getByText(usageCopy.kinds.starter_grant, { exact: true })).toBeVisible();
+      await premiumUsagePage.close();
     } finally {
       await db.end();
     }

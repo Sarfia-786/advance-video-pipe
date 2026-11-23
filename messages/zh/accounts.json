@@ -92,7 +92,13 @@
       "capture": "使用扣费",
       "release": "解除预留",
       "refund": "退款",
-      "adjustment": "调整"
-    }
-  }
+      "adjustment": "调整",
+      "reversal": "冲正",
+      "expiry": "到期扣除"
+    },
+    "availableCredits": "可用积分",
+    "reservedCredits": "预留积分",
+    "spentCredits": "已使用积分"
+  },
+  "usage": "用量与积分"
 }

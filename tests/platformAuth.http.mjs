@@ -9,10 +9,12 @@ test('English and Chinese account routes render in the production app', async ()
     ['/signup', 'Create platform account'],
     ['/forgot-password', 'Recover password'],
     ['/account', 'Account and settings'],
+    ['/usage', 'Usage and credits'],
     ['/zh/login', '登录'],
     ['/zh/signup', '创建平台账户'],
     ['/zh/forgot-password', '找回密码'],
     ['/zh/account', '账户与设置'],
+    ['/zh/usage', '用量与积分'],
   ]) {
     const res = await fetch(BASE + path);
     assert.equal(res.status, 200, path + ' returned ' + res.status);
