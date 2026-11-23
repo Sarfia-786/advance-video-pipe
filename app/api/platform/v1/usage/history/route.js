@@ -17,7 +17,9 @@ export async function GET(request) {
       throw new PlatformAccessError('INVALID_CURSOR', 400);
     }
     const { rows } = await pool.query(
-      'SELECT id, kind, amount, created_at AS "createdAt" FROM platform.credit_entries ' +
+      'SELECT id, kind, amount, operation_key AS "operationKey", reason, tool, model, ' +
+      'job_id AS "jobId", top_up_id AS "topUpId", created_at AS "createdAt" ' +
+      'FROM platform.credit_entries ' +
       'WHERE user_id = $1 AND ($2::bigint IS NULL OR id < $2) ORDER BY id DESC LIMIT $3',
       [actor.userId, before, pageSize + 1],
     );

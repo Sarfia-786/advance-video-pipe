@@ -14,6 +14,7 @@ export async function GET(request) {
       entitlements: actor.entitlements,
       personalWorkspaceId: actor.workspaceId,
       creditBalance: actor.creditBalance,
+      credits: actor.creditMeter,
     });
   } catch (error) {
     return privateApiError(error);
