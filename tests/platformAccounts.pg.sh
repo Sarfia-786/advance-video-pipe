@@ -64,3 +64,7 @@ BEGIN
                  AND access_until='2030-01-01T00:00:00Z') THEN RAISE EXCEPTION 'migration overwrote cancellation'; END IF;
 END $$;
 SQL
+
+# Credit reservations are a separate migration layered on the account wallet.
+psql -X -v ON_ERROR_STOP=1 "$DATABASE_URL" -f db/migrations/0004_credit_ledger.sql
+node --test tests/platformCredits.pg.mjs
