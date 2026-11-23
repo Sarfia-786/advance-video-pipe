@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { auth, pool, assertAuthConfigured } from '../lib/platform/accounts/auth.mjs';
 import { getPlatformActor } from '../lib/platform/accounts/server.mjs';
+import { requireWorkspaceAccess } from '../lib/platform/accounts/authorization.mjs';
 
 const BASE = 'http://localhost:3000';
 const ENDPOINT = BASE + '/api/platform/v1/auth';
@@ -82,6 +83,26 @@ test('real Postgres + SMTP verification + sessions + account replay', { timeout:
   assert.equal(actor.plan, 'free');
   assert.equal(actor.creditBalance, '25');
   assert.equal(actor.workspaceId, 'personal:' + userId);
+
+  // Real PostgreSQL tenant isolation: the currently authenticated user's
+  // database membership, not a supplied workspace ID, controls access.
+  const otherEmail = makeId() + '@example.test';
+  const otherSignup = await endpoint('/sign-up/email', {
+    name: 'Other Account', email: otherEmail, password: PASSWORD,
+  });
+  assert.equal(otherSignup.status, 200);
+  const other = await pool.query('SELECT id FROM "user" WHERE email = $1', [otherEmail]);
+  assert.equal(other.rows.length, 1);
+  const otherWorkspace = 'personal:' + other.rows[0].id;
+  const identity = {
+    getSession: async () => ({ user: { id: userId } }),
+    query: pool.query.bind(pool),
+  };
+  assert.equal((await requireWorkspaceAccess(identity, 'personal:' + userId, 'owner')).role, 'owner');
+  await assert.rejects(
+    () => requireWorkspaceAccess(identity, otherWorkspace, 'viewer'),
+    error => error.status === 404 && error.code === 'WORKSPACE_NOT_FOUND',
+  );
 
   // Re-delivering even a DIFFERENT event ID must never duplicate credits.
   await pool.query('SELECT platform.provision_account_created($1, $2, $3)', [userId, 'replayed:' + userId, 999]);

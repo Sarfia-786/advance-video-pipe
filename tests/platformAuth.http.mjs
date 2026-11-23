@@ -32,6 +32,12 @@ test('anonymous, forged provider key and forged cookie cannot read private profi
     assert.equal(response.headers.get('cache-control'), 'private, no-store');
     assert.deepEqual(await response.json(), { error: { code: 'AUTH_REQUIRED' } });
   }
+
+  const workspace = await fetch(BASE + '/api/platform/v1/workspaces/personal%3Avictim', {
+    headers: { 'X-API-KEY': 'fake-muapi-key', Authorization: 'Bearer fake-muapi-key' },
+  });
+  assert.equal(workspace.status, 401);
+  assert.deepEqual(await workspace.json(), { error: { code: 'AUTH_REQUIRED' } });
 });
 
 test('auth route is handled locally, not forwarded to MuAPI', async () => {
