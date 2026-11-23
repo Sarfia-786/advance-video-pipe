@@ -111,3 +111,14 @@ jobs:
         run: npm run build:packages
       - name: Verify Next production build
         run: npm run build
+      - name: HTTP smoke of localized account pages and private API boundary
+        run: |
+          npm start -- --port 3000 > /tmp/platform-next.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://localhost:3000/login >/dev/null; then break; fi
+            if [ "$attempt" = 60 ]; then cat /tmp/platform-next.log; exit 1; fi
+            sleep 1
+          done
+          node --test tests/platformAuth.http.mjs
