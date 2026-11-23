@@ -1,7 +1,8 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
-import { getCommonCopy } from '@/lib/locales';
+import { getCommonCopy, getLocaleConfig } from '@/lib/locales';
 import { validateApiKey } from './apiKeyValidation.mjs';
 
 export default function ApiKeyModal({ onSave, onClose, overlay = false, title, subtitle, locale = 'en' }) {
@@ -82,6 +83,11 @@ export default function ApiKeyModal({ onSave, onClose, overlay = false, title, s
             </a>
           </p>
         </form>
+        {!overlay && (
+          <Link href={getLocaleConfig(locale).rootPath + '/captions'} className="mt-4 block text-center text-sm text-white/80 underline">
+            {copy.openCaptions}
+          </Link>
+        )}
       </div>
     </div>
   );

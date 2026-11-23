@@ -1,0 +1,8 @@
+{
+  "title": "Caption editor", "studio": "Back to studio", "intro": "Edit your subtitles, check the timing, and download an SRT file.",
+  "cue": "Cue", "start": "Start (ms)", "end": "End (ms)", "text": "Subtitle text", "add": "Add cue", "remove": "Remove",
+  "preview": "Subtitle preview", "playhead": "Preview time", "empty": "No subtitle at this time", "download": "Download SRT",
+  "busy": "Exporting…", "done": "SRT file downloaded.", "network": "Export failed. Please try again.",
+  "CUE_COUNT": "Use between 1 and 500 cues.", "CUE_TIMING": "Use whole milliseconds, in order, with no overlapping cues. End time must follow start time and fit within 99 hours, 59 minutes and 59.999 seconds.",
+  "CUE_TEXT": "Enter 1–2,000 characters. Remove blank separator lines and control characters.", "BODY_TOO_LARGE": "The track is too large to export. Split it into smaller tracks."
+}

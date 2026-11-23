@@ -1,5 +1,6 @@
 {
   "tabs": {
+    "captions": "字幕",
     "image": "图像工作室",
     "layers": "图层工作室",
     "video": "视频工作室",
@@ -55,6 +56,7 @@
     "ariaLabel": "生成活动与通知"
   },
   "apiKeyModal": {
+    "openCaptions": "打开免费字幕编辑器",
     "title": "Open Generative AI",
     "subtitlePrefix": "输入您的",
     "subtitleSuffix": "API 密钥以开始创作",
