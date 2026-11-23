@@ -155,12 +155,6 @@ async function getBinaryStatus() {
     };
 }
 
-// Metal-enabled binaries hosted on our own release (macOS arm64 only).
-// Other platforms fall back to the stock leejet release.
-const CUSTOM_BINARIES = {
-    'darwin-arm64': 'https://github.com/Anil-matcha/Open-Generative-AI/releases/download/v1.0.3-binaries/sd-cli-metal-macos-arm64.zip',
-};
-
 // The Windows CUDA build ships ggml-cuda.dll but not the CUDA runtime it links
 // against. Without these DLLs next to the binary, ggml silently skips the CUDA
 // backend and falls back to CPU — orders of magnitude slower, with no error
@@ -260,66 +254,57 @@ async function downloadBinary(mainWindow) {
             clearBinDir();
         }
 
-        const platformKey = `${process.platform}-${process.arch}`;
-        const customUrl = CUSTOM_BINARIES[platformKey];
-
-        let downloadUrl, zipName;
         let chosenRelease = null;
         let windowsGpu = null;
         let windowsFallbacks = [];
 
-        if (customUrl) {
-            downloadUrl = customUrl;
-            zipName = path.basename(customUrl);
-        } else {
-            // Walk recent releases until we find one that actually ships a
-            // build for this platform. leejet sometimes publishes a partial
-            // release (e.g. master-587 ships only Mac arm64 + Linux ROCm),
-            // so the very latest tag isn't always usable.
-            const releases = await fetchJson(
-                'https://api.github.com/repos/leejet/stable-diffusion.cpp/releases?per_page=15'
-            );
+        // Walk recent releases until we find one that actually ships a
+        // build for this platform. leejet sometimes publishes a partial
+        // release (e.g. master-587 ships only Mac arm64 + Linux ROCm),
+        // so the very latest tag isn't always usable.
+        const releases = await fetchJson(
+            'https://api.github.com/repos/leejet/stable-diffusion.cpp/releases?per_page=15'
+        );
 
-            let chosen = null;
-            let lastSeen = [];
-            if (process.platform === 'win32') {
-                windowsGpu = await detectWindowsGpu();
-            }
-            for (const release of releases) {
-                const zips = (release.assets || [])
-                    .filter(a => a.name.endsWith('.zip'));
-                lastSeen = zips.map(a => a.name);
-                const pickedName = pickBinaryAssetForPlatform({
-                    platform: process.platform,
-                    arch: process.arch,
-                    zipNames: lastSeen,
-                    gpu: windowsGpu,
-                });
-                if (pickedName) {
-                    chosen = zips.find(a => a.name === pickedName);
-                    if (process.platform === 'win32') {
-                        windowsFallbacks = rankWindowsAssets({ zipNames: lastSeen, gpu: windowsGpu })
-                            .filter((n) => n !== pickedName)
-                            .map((n) => zips.find(a => a.name === n));
-                    }
-                    chosenRelease = release;
-                    break;
-                }
-            }
-
-            if (!chosen) {
-                if (process.platform === 'darwin' && process.arch !== 'arm64') {
-                    throw new Error('Local inference on macOS only supports Apple Silicon (M1/M2/M3/M4). Mac Intel is not supported by stable-diffusion.cpp upstream.');
-                }
-                if (process.platform === 'linux' && process.arch === 'arm64') {
-                    throw new Error('No upstream stable-diffusion.cpp binary found for linux-arm64. Install a build that bundles local-ai/linux-arm64/bin or provide the binary manually.');
-                }
-                const available = lastSeen.join(', ') || '(none)';
-                throw new Error(`No binary found for ${process.platform}-${process.arch} in the last 15 releases. Latest release assets: ${available}`);
-            }
-            downloadUrl = chosen.browser_download_url;
-            zipName = chosen.name;
+        let chosen = null;
+        let lastSeen = [];
+        if (process.platform === 'win32') {
+            windowsGpu = await detectWindowsGpu();
         }
+        for (const release of releases) {
+            const zips = (release.assets || [])
+                .filter(a => a.name.endsWith('.zip'));
+            lastSeen = zips.map(a => a.name);
+            const pickedName = pickBinaryAssetForPlatform({
+                platform: process.platform,
+                arch: process.arch,
+                zipNames: lastSeen,
+                gpu: windowsGpu,
+            });
+            if (pickedName) {
+                chosen = zips.find(a => a.name === pickedName);
+                if (process.platform === 'win32') {
+                    windowsFallbacks = rankWindowsAssets({ zipNames: lastSeen, gpu: windowsGpu })
+                        .filter((n) => n !== pickedName)
+                        .map((n) => zips.find(a => a.name === n));
+                }
+                chosenRelease = release;
+                break;
+            }
+        }
+
+        if (!chosen) {
+            if (process.platform === 'darwin' && process.arch !== 'arm64') {
+                throw new Error('Local inference on macOS only supports Apple Silicon (M1/M2/M3/M4). Mac Intel is not supported by stable-diffusion.cpp upstream.');
+            }
+            if (process.platform === 'linux' && process.arch === 'arm64') {
+                throw new Error('No upstream stable-diffusion.cpp binary found for linux-arm64. Install a build that bundles local-ai/linux-arm64/bin or provide the binary manually.');
+            }
+            const available = lastSeen.join(', ') || '(none)';
+            throw new Error(`No binary found for ${process.platform}-${process.arch} in the last 15 releases. Latest release assets: ${available}`);
+        }
+        const downloadUrl = chosen.browser_download_url;
+        let zipName = chosen.name;
 
         const installZip = async (url, name) => {
             send({ phase: 'downloading', progress: 0 });

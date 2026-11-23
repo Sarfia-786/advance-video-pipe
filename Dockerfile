@@ -9,7 +9,7 @@ COPY . .
 RUN for d in packages/Vibe-Workflow/packages/workflow-builder packages/Open-Poe-AI/packages/agents packages/Open-AI-Design-Agent/packages/design-agent; do \
       [ -f "$d/package.json" ] || { echo "ERROR: $d is missing. Run the Docker build from the repository root with all workspace packages in the build context." >&2; exit 1; }; \
     done
-RUN npm install
+RUN npm ci
 
 # Build sub-packages
 FROM deps AS builder
@@ -22,6 +22,7 @@ ENV NODE_ENV=production
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/packages ./packages
 COPY --from=builder /app/package.json ./package.json
 
 EXPOSE 3000

@@ -69,7 +69,7 @@ Early work in progress. Contributions welcome — see the routers and client `ag
 ```bash
 cd server
 pip install -r requirements.txt
-cp .env .env.local   # set MUAPI_BASE_URL and your API key
+cp .env.example .env   # set MUAPI_BASE_URL and your API key
 uvicorn app.main:app --reload
 ```
 
