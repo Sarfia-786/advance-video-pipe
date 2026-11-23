@@ -64,7 +64,7 @@ export default function UsageDashboard({ copy, rootPath, locale }) {
 
   return <main className={styles.page}>
     <div className={styles.usageShell}>
-      <Link className={styles.back} href={rootPath + '/account'}>← {copy.account}</Link>
+      <Link className={styles.back} href={rootPath + '/account'} aria-label={copy.account}>← {copy.account}</Link>
       <section className={styles.card}>
         <h1>{copy.title}</h1>
         <p>{copy.intro}</p>
