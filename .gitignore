@@ -37,6 +37,6 @@ out/
 .env.*
 !.env.example
 
-# Browser test output
-test-results/
-playwright-report/
+# Browser test artifacts
+/test-results/
+/playwright-report/

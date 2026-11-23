@@ -55,7 +55,7 @@ export default function AccountPortal({ mode, copy, rootPath }) {
         response = await authClient.signUp.email({ name, email, password, callbackURL: verificationReturn });
         if (!response.error) setNotice(copy.verify);
       } else if (mode === 'login') {
-        response = await authClient.signIn.email({ email, password });
+        response = await authClient.signIn.email({ email, password, callbackURL: rootPath + '/account' });
         if (!response.error) { window.location.assign(rootPath + '/account'); return; }
       } else if (mode === 'recover') {
         response = await authClient.requestPasswordReset({ email, redirectTo: rootPath + '/reset-password' });

@@ -535,6 +535,10 @@ npm run electron:build:all
 
 Installers are output to the `release/` folder. Pre-built binaries are also available on the [Releases page](https://github.com/Anil-matcha/Open-Generative-AI/releases).
 
+## Platform accounts
+
+Open **Account and settings** from the web studio to register, verify your email, or manage your profile in English or Chinese. Local development uses PostgreSQL and a Mailpit inbox. [Account setup and verification](docs/implementation/PLATFORM_AUTH.md)
+
 ## 🏗️ Architecture
 
 The app is a **Next.js monorepo** with a shared `packages/studio` component library.

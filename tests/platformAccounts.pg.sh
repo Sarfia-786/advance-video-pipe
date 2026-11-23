@@ -24,10 +24,12 @@ END $$;
 SQL
 # Existing-fixture migration must be safe to repeat.
 psql -X -v ON_ERROR_STOP=1 "$DATABASE_URL" -f db/migrations/0001_platform_accounts.sql
+pids=()
 for i in 1 2 3 4 5; do
   psql -X -v ON_ERROR_STOP=1 "$DATABASE_URL" -c "SELECT platform.provision_account_created('charlie', 'evt-charlie-$i', 500);" >/dev/null &
+  pids+=("$!")
 done
-wait
+for pid in "${pids[@]}"; do wait "$pid"; done
 psql -X -v ON_ERROR_STOP=1 "$DATABASE_URL" <<'SQL'
 DO $$
 BEGIN

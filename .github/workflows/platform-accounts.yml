@@ -18,6 +18,9 @@ on:
       - 'app/zh/forgot-password/**'
       - 'app/zh/reset-password/**'
       - 'components/AccountPortal*'
+      - 'components/ApiKeyModal.js'
+      - 'components/StandaloneShell.js'
+      - 'messages/*/common.json'
       - 'messages/*/accounts.json'
       - 'tests/platform*'
       - 'tests/support/accountInbox.mjs'
@@ -33,7 +36,7 @@ permissions:
 
 jobs:
   accounts:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     services:
       postgres:
@@ -96,7 +99,7 @@ jobs:
         run: npm run build
       - name: HTTP smoke of localized account pages and private API boundary
         run: |
-          npm start -- --port 3000 > /tmp/platform-next.log 2>&1 &
+          node node_modules/next/dist/bin/next start --hostname 127.0.0.1 --port 3000 > /tmp/platform-next.log 2>&1 &
           server_pid=$!
           trap 'kill "$server_pid" 2>/dev/null || true' EXIT
           for attempt in $(seq 1 60); do
@@ -108,4 +111,6 @@ jobs:
       - name: Install Chromium for account browser tests
         run: npx --no-install playwright install --with-deps --only-shell chromium
       - name: Verify English and Chinese account journeys in Chromium
+        env:
+          BETTER_AUTH_URL: http://localhost:3214
         run: npx --no-install playwright test -c playwright.accounts.config.mjs

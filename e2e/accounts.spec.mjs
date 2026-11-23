@@ -23,7 +23,10 @@ for (const [locale, root] of [['en', ''], ['zh', '/zh']]) {
       await expect(page.getByText(email, { exact: true })).toBeVisible();
     };
 
-    await page.goto(root + '/signup');
+    await page.goto(root + '/studio');
+    await page.getByRole('link', { name: copy.account, exact: true }).click();
+    await page.getByRole('link', { name: copy.newAccount }).click();
+    await expect(page.getByRole('heading', { name: copy.signup, exact: true })).toBeVisible();
     await fill(copy.name, 'Studio member');
     await fill(copy.email, email);
     await fill(copy.password, password);

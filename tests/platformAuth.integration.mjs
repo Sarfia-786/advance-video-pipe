@@ -1,4 +1,6 @@
 import test from 'node:test';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import assert from 'node:assert/strict';
 import { auth, pool, assertAuthConfigured } from '../lib/platform/accounts/auth.mjs';
 import { getPlatformActor } from '../lib/platform/accounts/server.mjs';
@@ -182,6 +184,10 @@ test('real Postgres + SMTP verification + sessions + account replay', { timeout:
   }
   remaining = await pool.query('SELECT count(*)::int AS n FROM "user" WHERE id=$1', [userId]);
   assert.equal(remaining.rows[0].n, 0, 'Auth user must be removed');
+  const deletionEvent = await pool.query('SELECT user_id FROM platform.account_deletions WHERE user_id=$1', [userId]);
+  assert.equal(deletionEvent.rowCount, 1, 'Private-object cleanup has a durable deletion event');
+  await assert.rejects(() => getPlatformActor(new Headers({ Cookie: deleteCookie })), { code: 'AUTH_REQUIRED' });
+  await pool.query('SELECT platform.provision_account_created($1, $2, $3)', [userId, 'delayed:' + userId, 25]);
   const platformRemoved = await pool.query('SELECT count(*)::int AS n FROM platform.user_profiles WHERE user_id=$1', [userId]);
   assert.equal(platformRemoved.rows[0].n, 0, 'Private profile must be removed');
 
@@ -193,7 +199,57 @@ test('real Postgres + SMTP verification + sessions + account replay', { timeout:
   }
   assert.equal(throttled, true, 'Auth rate limit must produce HTTP 429');
 
-  t.diagnostic('Verified: signup → real SMTP → email verification → login → private plan/credits → idempotency → expired sessions → CSRF → password recovery → revoked sessions → account deletion → rate limit.');
+  t.diagnostic('Verified (including expired email verification and reset links): signup → real SMTP → email verification → login → private plan/credits → idempotency → expired sessions → CSRF → password recovery → revoked sessions → account deletion → rate limit.');
+});
+
+test('identity creation and deletion roll back together with account grants and cleanup events', async () => {
+  const id = makeId();
+  const db = await pool.connect();
+  const create = () => db.query(
+    'INSERT INTO "user" (id, name, email, "emailVerified") VALUES ($1, $2, $3, false)',
+    [id, 'Rollback fixture', id + '@example.test'],
+  );
+  const count = async table => (await db.query('SELECT count(*)::int AS n FROM platform.' + table + ' WHERE user_id=$1', [id])).rows[0].n;
+  try {
+    await db.query('BEGIN');
+    await create();
+    assert.equal(await count('credit_entries'), 1);
+    await db.query('ROLLBACK');
+    assert.equal(await count('user_profiles'), 0);
+    await create();
+    await db.query('BEGIN');
+    await db.query('DELETE FROM "user" WHERE id = $1', [id]);
+    assert.equal(await count('account_deletions'), 1);
+    assert.equal(await count('credit_entries'), 0);
+    await db.query('ROLLBACK');
+    assert.equal(await count('account_deletions'), 0);
+    assert.equal(await count('credit_entries'), 1);
+  } finally {
+    await db.query('ROLLBACK');
+    await db.query('DELETE FROM "user" WHERE id=$1', [id]);
+    db.release();
+  }
+});
+
+test('replaying the migration repairs an older missing grant and preserves provisioned accounts', async () => {
+  const repair = makeId();
+  const existing = makeId();
+  try {
+    for (const id of [repair, existing]) {
+      await pool.query('INSERT INTO "user" (id, name, email, "emailVerified") VALUES ($1, $2, $3, true)',
+        [id, 'Upgrade fixture', id + '@example.test']);
+    }
+    // Model a user committed by the previous adapter before its callback succeeded.
+    await pool.query('DELETE FROM platform.user_profiles WHERE user_id=$1', [repair]);
+    const migrate = () => promisify(execFile)(process.execPath, ['scripts/migrate-platform-auth.mjs'],
+      { env: { ...process.env, PLATFORM_STARTER_CREDITS: '41' } });
+    await Promise.all([migrate(), migrate()]);
+    const grants = await pool.query('SELECT user_id, amount::int FROM platform.credit_entries WHERE user_id = ANY($1)', [[repair, existing]]);
+    assert.equal(grants.rowCount, 2);
+    assert.deepEqual(Object.fromEntries(grants.rows.map(row => [row.user_id, row.amount])), { [repair]: 41, [existing]: 25 });
+  } finally {
+    await pool.query('DELETE FROM "user" WHERE id = ANY($1)', [[repair, existing]]);
+  }
 });
 
 test.after(async () => {

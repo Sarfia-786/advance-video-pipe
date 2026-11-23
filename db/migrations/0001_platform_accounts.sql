@@ -57,6 +57,11 @@ CREATE TABLE IF NOT EXISTS platform.account_events (
   UNIQUE (event_type, user_id)
 );
 
+CREATE TABLE IF NOT EXISTS platform.account_deletions (
+  user_id text PRIMARY KEY,
+  deleted_at timestamptz NOT NULL DEFAULT now()
+);
+
 -- Internal-only. Call after a verified auth provider has created the user.
 -- A single SQL transaction ensures atomic events, wallet and memberships.
 CREATE OR REPLACE FUNCTION platform.provision_account_created(
@@ -73,6 +78,9 @@ BEGIN
   END IF;
 
   PERFORM pg_advisory_xact_lock(hashtextextended(p_user_id, 424242));
+  IF EXISTS (SELECT 1 FROM platform.account_deletions WHERE user_id = p_user_id) THEN
+    RETURN;
+  END IF;
 
   INSERT INTO platform.user_profiles(user_id) VALUES (p_user_id)
     ON CONFLICT (user_id) DO NOTHING;

@@ -1,7 +1,8 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
-import { getCommonCopy } from '@/lib/locales';
+import { getCommonCopy, getLocaleConfig } from '@/lib/locales';
 import { validateApiKey } from './apiKeyValidation.mjs';
 
 export default function ApiKeyModal({ onSave, onClose, overlay = false, title, subtitle, locale = 'en' }) {
@@ -51,6 +52,12 @@ export default function ApiKeyModal({ onSave, onClose, overlay = false, title, s
           </p>
         </div>
 
+        {!overlay && (
+          <Link href={getLocaleConfig(locale).rootPath + '/account'}
+            className="mb-5 block text-center text-sm text-cyan-300 underline">
+            {copy.openAccount}
+          </Link>
+        )}
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
             <label className="block text-xs font-bold text-white/30 ml-1">

@@ -1,83 +1,66 @@
-# Platform accounts, sessions and PostgreSQL — Issue #4, PR #22
+# Platform accounts
 
-This milestone extends the first platform-schema checkpoint without touching caption code
-(#3). It uses **Better Auth 1.7.27**, PostgreSQL through \`pg\`, and SMTP through
-Nodemailer. MuAPI BYOK credentials never authenticate private platform routes.
+The web studio's **Account and settings** link opens the account portal in English or Chinese. It is available before entering a provider key and in studio settings. The same pages are available at `/signup`, `/login`, `/forgot-password`, `/reset-password`, and `/account` with optional `/zh` prefixes.
 
 ## Local setup
 
-1. Start PostgreSQL 16 (or later). Create an empty app database, with a role that
-   owns migrations and can execute \`platform.provision_account_created\`. Better Auth
-   uses the default \`public\` schema for \`user\`, \`session\`, \`account\`,
-   \`verification\`, and \`rateLimit\`.
-2. Start a local-only SMTP inbox:
-   \`docker run --rm -p 127.0.0.1:8025:8025 -p 127.0.0.1:1025:1025 axllent/mailpit\`.
-   The inbox is at http://localhost:8025; do not expose it publicly.
-3. Set environment values in your untracked \`.env.local\`:
-   - \`DATABASE_URL=postgresql://user:password@localhost:5432/platform\`
-   - \`BETTER_AUTH_URL=http://localhost:3000\` (use a real HTTPS origin in production)
-   - \`BETTER_AUTH_SECRET=<unique random 32+ character value>\` (for example, generate with \`openssl rand -base64 32\`)
-   - \`SMTP_HOST=localhost\`, \`SMTP_PORT=1025\`, \`SMTP_FROM=Studio <noreply@example.test>\`
-   - \`PLATFORM_STARTER_CREDITS=25\` (integer 0–1,000,000)
-   - Optional authenticated SMTP: \`SMTP_USER\` and \`SMTP_PASSWORD\` together; use \`SMTP_SECURE=true\` for implicit TLS
-4. Run \`npm ci\`. Run \`psql -v ON_ERROR_STOP=1 "$DATABASE_URL" -f db/migrations/0001_platform_accounts.sql\`;
-   then \`node scripts/migrate-platform-auth.mjs\`. These two migrations are
-   independent: the platform SQL is versioned here, and Better Auth maintains
-   its own adapter schema. Inspect migration changes before upgrading Better Auth.
-5. Run \`npm run build:packages\` and \`npm run dev\`. Open \`/signup\`, \`/login\`,
-   \`/forgot-password\`, \`/reset-password\` or \`/account\`. Chinese routes have
-   \`/zh\` in front.
+Use Node.js 22 LTS or later and PostgreSQL 16 or later. Start a local database and Mailpit, then install the application dependencies.
 
-## Auth and provisioning contract
+```sh
+docker compose -f compose.accounts.yml up -d
+cp .env.example .env.local
+openssl rand -hex 32
+npm ci
+```
 
-- All auth methods live under \`/api/platform/v1/auth/*\` (not the legacy MuAPI proxy).
-- Better Auth handles password hashing (scrypt), verification/reset token validity,
-  HTTP-only cookies, origin/CSRF checks and database-backed session expiration.
-  Sessions expire after seven days; password resets revoke sessions.
-- Production rate limits use the database store, so limits persist across web
-  instances. Behind a proxy, configure and validate the real client IP chain
-  rather than blindly trusting browser-supplied forwarded headers.
-- A server-authenticated user-created hook invokes
-  \`platform.provision_account_created(userId, "auth-user:"+userId, credits)\`.
-  On the first authenticated private profile read, the same event is
-  safely retried if a callback was interrupted. The server-side idempotent
-  PostgreSQL function guarantees at most one starter grant, **including when the
-  initial grant amount is zero**.
-- \`GET /api/platform/v1/me\` resolves the Better Auth session, not a MuAPI key;
-  reads current plan, personal workspace and credit history from PostgreSQL; and
-  uses private/no-store cache headers. Invalid and expired sessions receive 401.
-- Settings allow name updates, sign-out, revoke sessions + sign-out, and account
-  deletion authenticated by the current password. Better Auth deletes its auth
-  records and a post-deletion hook deletes platform profile (cascading membership,
-  workspace and wallet rows). Cloud object cleanup is **not** implemented.
-- No changes to \`components/StandaloneShell.js\` or caption paths were made,
-  to avoid conflicts with captions PRs. Account entry routes are directly usable;
-  navigation integration should be coordinated after #3 lands.
+Put the generated value in `BETTER_AUTH_SECRET` in the untracked `.env.local`. The example connects to PostgreSQL on port 5432 and sends mail to Mailpit on port 1025. Set `BETTER_AUTH_URL` to the exact public origin the browser uses, including its port. Start the application after applying the migrations.
 
-## Automated verification
+```sh
+node --env-file=.env.local scripts/migrate-platform-auth.mjs
+npm run build:packages
+npm run dev
+```
 
-- \`node --test tests/platformAccounts.test.mjs tests/platformAuthConfig.test.mjs\`
-  validates contracts and configuration.
-- \`bash tests/platformAccounts.pg.sh\` checks fresh and repeated migrations,
-  duplicate events, zero-credit retries and concurrent provisioning.
-- \`node scripts/migrate-platform-auth.mjs\` creates/updates the maintained auth schema.
-- \`node --test tests/platformAuth.integration.mjs\` requires a running isolated
-  PostgreSQL database and Mailpit, and runs signup, email verification, login,
-  session/plan reads, event replay, invalid/expired sessions, reset email,
-  cross-origin CSRF rejection and rate limit checks.
-- \`npm run build:packages && npm run build\` verifies the Next.js app and all workspaces.
-- The GitHub Actions \`Platform accounts foundation\` workflow performs all checks.
-  Only treat a test as passed if its **latest** run shows success.
+Open the studio at `http://localhost:3000/studio`. Mailpit displays verification, recovery and deletion messages at `http://localhost:8025`. The Chinese studio starts at `/zh/studio`. Follow the verification message in the browser. Deletion confirmation requires a session for the same account.
 
-## Security/production handoff
+## API
 
-Review the following before shipping: proxy/IP trust configuration, email deliverability,
-mandatory HTTPS, database role permissions, token/email enumeration behavior, migrations
-against an existing populated fixture, session revocation from different devices, and
-object-storage cleanup during deletion.
+| Method and path | Behavior |
+| --- | --- |
+| `GET /api/platform/v1/me` | Returns the current verified user's profile, plan, personal workspace ID and credit balance. |
+| `GET /api/platform/v1/workspaces/{workspaceId}` | Reads membership and plan for the current session. Returns 401 for a missing or expired session and 404 for an inaccessible workspace. |
+| `/api/platform/v1/auth/*` | Better Auth handles signup, verification, credential login, password recovery, profile updates, sign-out, session revocation and deletion. The portal uses its same-origin React client. |
 
-Next independently testable work in #4: deploy a real SMTP provider and verify
-email expiry; add browser E2E in both locales; implement account-deletion
-reconciliation/outbox and object cleanup; add robust multi-user workspace
-isolation and private profile/settings API mutation tests. Preserve PR #2's
-contract → API → EN/ZH entry → automated checks → tracker handoff pattern.
+Better Auth stores sessions in PostgreSQL. Private reads use the verified session cookie, check ownership on the server, and send `Cache-Control: private, no-store`. A MuAPI key authorizes provider operations only.
+
+## Database lifecycle
+
+The migration command takes a PostgreSQL advisory lock, applies the platform schema, runs the locked Better Auth adapter's schema migration, then installs the account lifecycle triggers. Run it again after updating the application. Existing signup events retain their original allocation. An older auth identity missing an account-created event is provisioned during migration.
+
+A successful auth identity insert creates the personal workspace, membership, wallet and configured starter grant in the same transaction. `PLATFORM_STARTER_CREDITS` accepts integers from 0 through 1,000,000 and defaults to 25. A deletion commits the removal of platform data and a row in `platform.account_deletions` together. The row holds only the opaque identity and deletion time. It prevents later deliveries from re-creating the profile and gives the future object-storage worker an ID for cleanup. Cloud asset removal is tracked in #7.
+
+## Deployment settings
+
+Use the canonical HTTPS origin and a private database role. The migration role needs schema and trigger creation rights. A separate application role needs access to the auth and platform tables, sequences, and execution of the provisioning function. Keep direct database access restricted to trusted services.
+
+Set `SMTP_HOST`, `SMTP_PORT` and `SMTP_FROM` for the deployment's mail relay. Set `SMTP_USER` and `SMTP_PASSWORD` together when the relay requires authentication. `SMTP_SECURE=true` selects implicit TLS. Authenticated SMTP on other ports requires STARTTLS.
+
+Auth rate limits use PostgreSQL. Set `AUTH_TRUSTED_IP_HEADER` only when a trusted ingress overwrites that header with a single client IP and clients cannot reach the app directly. Without this setting, requests share a bucket per auth path. Verify delivery and the proxy configuration against the chosen deployment before launch.
+
+## Verification
+
+Use a disposable database and a local inbox for these commands. Export `DATABASE_URL`, `BETTER_AUTH_URL`, the auth secret and SMTP settings in the test shell. Set `MAILPIT_URL` when the inbox is served somewhere other than `http://localhost:8025`. The fixture uses the default 25 starter credits. Run the foundation SQL checks against an empty database. They reapply the SQL to a populated fixture internally.
+
+```sh
+npm test
+bash tests/platformAccounts.pg.sh
+node scripts/migrate-platform-auth.mjs
+node --test tests/platformAuth.integration.mjs
+node scripts/migrate-platform-auth.mjs
+npm run build:packages
+npm run build
+npx --no-install playwright install --only-shell chromium
+npx --no-install playwright test -c playwright.accounts.config.mjs
+```
+
+The browser suite starts its own production server at the configured loopback origin. It follows real Mailpit links in both languages, edits a profile, recovers a password, confirms deletion, checks two real tenants, and revokes sessions on two devices. The integration suite also verifies expired email links, session denial, rate limits, transaction rollback, and delayed signup events after deletion. The separate `node --test tests/platformAuth.http.mjs` smoke test runs against an already running production server.
