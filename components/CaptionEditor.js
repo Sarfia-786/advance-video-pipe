@@ -3,12 +3,15 @@
 import Link from 'next/link';
 import { useRef, useState } from 'react';
 import { formatTimestamp, MAX_CUES, MAX_TEXT, MAX_TIME_MS } from '@/lib/platform/captions/srt.mjs';
+import WordTimingEditor from './WordTimingEditor';
+import { downloadCaptionTrack } from './captionDownload.mjs';
 import styles from './CaptionEditor.module.css';
 
 const makeCue = (id, start) => ({ id, startMs: String(start), endMs: String(Math.min(start + 2000, MAX_TIME_MS)), text: '' });
 const milliseconds = (value) => /^\d+$/.test(value) ? Number(value) : null;
 
 export default function CaptionEditor({ copy, studioHref }) {
+  const [mode, setMode] = useState('cues');
   const [rows, setRows] = useState(() => [makeCue(1, 0)]);
   const nextId = useRef(2);
   const [time, setTime] = useState(0);
@@ -33,26 +36,7 @@ export default function CaptionEditor({ copy, studioHref }) {
     setBusy(true);
     setMessage('');
     try {
-      const response = await fetch('/api/platform/v1/captions/srt', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cues }),
-      });
-      if (!response.ok) {
-        const { error } = await response.json();
-        const prefix = error.cue ? copy.cue + ' ' + error.cue + ' — ' : '';
-        setMessage(prefix + (copy[error.code] || copy.network));
-        return;
-      }
-      const url = URL.createObjectURL(await response.blob());
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'captions.srt';
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-      setMessage(copy.done);
-    } catch {
-      setMessage(copy.network);
+      setMessage(await downloadCaptionTrack({ cues }, copy));
     } finally {
       setBusy(false);
     }
@@ -62,7 +46,15 @@ export default function CaptionEditor({ copy, studioHref }) {
     <main className={styles.page}>
       <Link href={studioHref}>← {copy.studio}</Link>
       <header><h1>{copy.title}</h1><p>{copy.intro}</p></header>
-      <form onSubmit={download}>
+      <div className={styles.modes} role="group" aria-label={copy.timingMode}>
+        {['cues', 'words'].map(value => (
+          <button key={value} type="button" aria-pressed={mode === value} onClick={() => setMode(value)}>
+            {copy.modes[value]}
+          </button>
+        ))}
+      </div>
+      <div hidden={mode !== 'words'}><WordTimingEditor copy={copy} /></div>
+      <form onSubmit={download} hidden={mode !== 'cues'}>
         <div className={styles.columns}>
           <section aria-label={copy.title}>
             {rows.map((row, index) => (
