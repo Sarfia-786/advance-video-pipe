@@ -92,7 +92,12 @@
       "capture": "Usage charge",
       "release": "Reservation released",
       "refund": "Refund",
-      "adjustment": "Adjustment"
-    }
+      "adjustment": "Adjustment",
+      "reversal": "Reversal",
+      "expiry": "Expired credits"
+    },
+    "availableCredits": "Available credits",
+    "reservedCredits": "Reserved credits",
+    "spentCredits": "Credits spent"
   }
-}
+}\n
