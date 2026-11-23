@@ -55,3 +55,5 @@ npx --no-install playwright test -c playwright.accounts.config.mjs
 ```
 
 The PostgreSQL suite applies the credit migration twice to verify replay safety. Its acceptance fixture gives a user 10 credits, races two reservations of 8, confirms only one succeeds, captures 5, releases 3 and replays settlement with 5 credits still available. It also covers a zero-capture failure/retry, all supported ledger event kinds, active-hold protection and exactly-once starter grants.
+
+A separate ledger-writing database role needs `UPDATE (ledger_revision)` on `platform.credit_wallets`. Wallet entries advance a per-wallet revision in the same transaction as the ledger append. A worker using repeatable-read or serializable isolation should retry its entire transaction on PostgreSQL SQLSTATE `40001`. The next attempt reads the committed balance. Operation keys can include colons in both account and job IDs. Existing ledger rows retain their original identifiers.
