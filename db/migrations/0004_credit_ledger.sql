@@ -25,7 +25,7 @@ ALTER TABLE platform.credit_entries
   ALTER COLUMN operation_key SET NOT NULL;
 ALTER TABLE platform.credit_entries
   ADD CONSTRAINT credit_entries_operation_key_length
-    CHECK (length(operation_key) BETWEEN 1 AND 200) NOT VALID;
+    CHECK (length(operation_key) BETWEEN 1 AND 300) NOT VALID;
 ALTER TABLE platform.credit_entries
   VALIDATE CONSTRAINT credit_entries_operation_key_length;
 CREATE INDEX IF NOT EXISTS credit_entries_by_user_operation
