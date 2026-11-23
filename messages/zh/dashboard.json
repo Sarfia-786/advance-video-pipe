@@ -1,0 +1,59 @@
+{
+  "title": "创作工作台",
+  "subtitle": "选择创作流程，进入相应工作室继续操作。账户信息直接来自平台接口。",
+  "navigation": "导航",
+  "quickActions": "快速创作",
+  "overview": "账户概览",
+  "account": "账户与设置",
+  "projects": "项目与渲染",
+  "projectsPending": "私有项目和任务服务上线后，这里将显示已保存的项目及正在进行的渲染。",
+  "loading": "正在加载账户…",
+  "signedOut": "登录后查看自己的套餐和积分。",
+  "signIn": "登录",
+  "failed": "无法加载账户信息。",
+  "retry": "重试",
+  "credits": "可用积分",
+  "plan": "当前套餐",
+  "plans": {
+    "free": "免费版",
+    "premium": "高级版"
+  },
+  "soon": "即将推出",
+  "open": "打开",
+  "primary": {
+    "dashboard": "仪表盘",
+    "studio": "全部工作室",
+    "captions": "字幕编辑器",
+    "account": "账户与设置"
+  },
+  "actions": {
+    "short": {
+      "title": "脚本生成短视频",
+      "description": "自动短视频流程将随第 #18 号议题推出。"
+    },
+    "image": {
+      "title": "生成图片",
+      "description": "打开图像工作室。"
+    },
+    "video": {
+      "title": "生成视频",
+      "description": "打开视频工作室。"
+    },
+    "script": {
+      "title": "撰写脚本",
+      "description": "打开 AI 智能体工作区。"
+    },
+    "workflow": {
+      "title": "构建工作流",
+      "description": "打开工作流编辑器。"
+    },
+    "voice": {
+      "title": "生成配音",
+      "description": "打开音频工作室。"
+    },
+    "thumbnail": {
+      "title": "制作缩略图",
+      "description": "打开设计智能体。"
+    }
+  }
+}
