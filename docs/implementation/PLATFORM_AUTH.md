@@ -37,7 +37,7 @@ Better Auth stores sessions in PostgreSQL. Private reads use the verified sessio
 
 The migration command takes a PostgreSQL advisory lock, applies the platform schema, runs the locked Better Auth adapter's schema migration, then installs the account lifecycle triggers. Run it again after updating the application. Existing signup events retain their original allocation. An older auth identity missing an account-created event is provisioned during migration.
 
-A successful auth identity insert creates the personal workspace, membership, wallet and configured starter grant in the same transaction. `PLATFORM_STARTER_CREDITS` accepts integers from 0 through 1,000,000 and defaults to 25. A deletion commits the removal of platform data and a row in `platform.account_deletions` together. The row holds only the opaque identity and deletion time. It prevents later deliveries from re-creating the profile and gives the future object-storage worker an ID for cleanup. Cloud asset removal is tracked in #7.
+A successful auth identity insert creates the personal workspace, membership, wallet and configured starter grant in the same transaction. `PLATFORM_STARTER_CREDITS` accepts integers from 0 through 1,000,000 and defaults to 25. A deletion commits the removal of platform data and a row in `platform.account_deletions` together. The tombstone prevents later signup deliveries from re-creating the profile. The project cleanup worker records completion after removing private objects. See [Private projects and assets](PRIVATE_PROJECTS.md) for the retention and accounting archive behavior.
 
 ## Deployment settings
 
