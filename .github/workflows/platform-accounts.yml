@@ -107,15 +107,28 @@ jobs:
         run: |
           node scripts/migrate-platform-auth.mjs
           node --test tests/platformProjects.pg.mjs
+      - name: Cache the pinned MinIO test binary
+        id: minio-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/project-minio
+          key: project-minio-${{ runner.os }}-${{ runner.arch }}-0d7408fc9969caf07de6a8c3a84f9fbb10a6739e
+      - name: Build MinIO from its pinned release source
+        if: steps.minio-cache.outputs.cache-hit != 'true'
+        run: |
+          git clone --quiet --depth 1 --branch RELEASE.2025-04-22T22-12-26Z https://github.com/minio/minio.git "$RUNNER_TEMP/minio-src"
+          cd "$RUNNER_TEMP/minio-src"
+          test "$(git rev-parse HEAD)" = 0d7408fc9969caf07de6a8c3a84f9fbb10a6739e
+          GOMAXPROCS=4 go build -trimpath -o "$RUNNER_TEMP/project-minio" .
       - name: Start a private S3-compatible bucket for the project HTTP tests
         env:
           AWS_ACCESS_KEY_ID: projects-ci
           AWS_SECRET_ACCESS_KEY: projects-ci-only-password
           AWS_DEFAULT_REGION: us-east-1
         run: |
-          docker run -d --name project-minio -p 127.0.0.1:9000:9000 \
-            -e MINIO_ROOT_USER="$AWS_ACCESS_KEY_ID" -e MINIO_ROOT_PASSWORD="$AWS_SECRET_ACCESS_KEY" \
-            minio/minio:RELEASE.2025-04-22T22-12-26Z server /data
+          MINIO_ROOT_USER="$AWS_ACCESS_KEY_ID" MINIO_ROOT_PASSWORD="$AWS_SECRET_ACCESS_KEY" \
+            "$RUNNER_TEMP/project-minio" server "$RUNNER_TEMP/project-bucket" --address 127.0.0.1:9000 \
+            > "$RUNNER_TEMP/project-minio.log" 2>&1 < /dev/null &
           curl --fail --silent --show-error --retry 30 --retry-delay 1 --retry-connrefused http://127.0.0.1:9000/minio/health/live
           aws --endpoint-url http://127.0.0.1:9000 s3api create-bucket --bucket projects-ci
       - name: Confirm SMTP test inbox is reachable

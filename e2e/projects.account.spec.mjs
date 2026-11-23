@@ -22,8 +22,8 @@ for (const [locale, root] of [['en',''],['zh','/zh']]) {
       await expect(page.getByRole('heading',{name:'First cut'})).toBeVisible();
       await expect(page.getByText(copy.days.replace('{n}',7))).toBeVisible();
       await page.getByLabel(copy.name).fill('Final cut');
-      await page.getByLabel(copy.script,{exact:true}).fill('A short script');
-      await page.getByLabel(copy.document).fill('{"shots":[1,2]}');
+      await page.getByRole('textbox',{name:copy.script,exact:true}).fill('A short script');
+      await page.getByRole('textbox',{name:copy.document,exact:true}).fill('{"shots":[1,2]}');
       await page.getByRole('button',{name:copy.save}).click();
       await expect(page.getByRole('status')).toHaveText(copy.saved);
       await page.getByLabel(copy.file).setInputFiles({name:'lines.txt',mimeType:'text/plain',buffer:Buffer.from('Private lines')});
@@ -39,8 +39,8 @@ for (const [locale, root] of [['en',''],['zh','/zh']]) {
       await page.getByRole('link',{name:copy.list,exact:false}).click();
       await expect(page.getByText(copy.warning)).toBeVisible();
       await page.getByRole('link',{name:'Final cut'}).click();
-      await expect(page.getByLabel(copy.script,{exact:true})).toHaveValue('A short script');
-      expect(JSON.parse(await page.getByLabel(copy.document).inputValue())).toEqual({shots:[1,2]});
+      await expect(page.getByRole('textbox',{name:copy.script,exact:true})).toHaveValue('A short script');
+      expect(JSON.parse(await page.getByRole('textbox',{name:copy.document,exact:true}).inputValue())).toEqual({shots:[1,2]});
       await page.getByRole('button',{name:copy.deleteProject}).click();
       await page.getByRole('button',{name:copy.yes}).click();
       await expect(page.getByText(copy.empty)).toBeVisible();

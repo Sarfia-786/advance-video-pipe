@@ -64,7 +64,7 @@ function Workspace({ copy, root, projectId }) {
     const deadlines = (projectId ? [data] : data.projects).filter(p => p.expiresAt).map(p => Date.parse(p.expiresAt));
     if (!deadlines.length) return;
     const timer = setTimeout(() => { setNow(Date.now()); setRefresh(n => n+1); },
-      Math.max(0, Math.min(2147483647, Math.min(...deadlines) - Date.now() + 1)));
+      Math.max(0, Math.min(2147483647, deadlines.reduce((first, time) => Math.min(first, time), Infinity) - Date.now() + 1)));
     return () => clearTimeout(timer);
   }, [data, projectId]);
 
