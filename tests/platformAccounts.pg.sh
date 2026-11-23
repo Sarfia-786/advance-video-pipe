@@ -65,6 +65,7 @@ BEGIN
 END $$;
 SQL
 
-# Credit reservations are a separate migration layered on the account wallet.
+# Credit ledger migration is replay-safe on both pre-existing and populated wallets.
+psql -X -v ON_ERROR_STOP=1 "$DATABASE_URL" -f db/migrations/0004_credit_ledger.sql
 psql -X -v ON_ERROR_STOP=1 "$DATABASE_URL" -f db/migrations/0004_credit_ledger.sql
 node --test tests/platformCredits.pg.mjs
