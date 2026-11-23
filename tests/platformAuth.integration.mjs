@@ -75,6 +75,9 @@ test('real Postgres + SMTP verification + sessions + account replay', { timeout:
   assert.equal(actor.userId, userId);
   assert.equal(actor.plan, 'free');
   assert.equal(actor.creditBalance, '25');
+  assert.deepEqual(actor.creditMeter, {
+    settledBalance: '25', reserved: '0', available: '25', spent: '0',
+  });
   assert.equal(actor.workspaceId, 'personal:' + userId);
 
   // Real PostgreSQL tenant isolation: the currently authenticated user's
@@ -114,10 +117,11 @@ test('real Postgres + SMTP verification + sessions + account replay', { timeout:
   // Re-delivering even a DIFFERENT event ID must never duplicate credits.
   await pool.query('SELECT platform.provision_account_created($1, $2, $3)', [userId, 'replayed:' + userId, 999]);
   const afterReplay = await pool.query(
-    'SELECT count(*)::int AS count, sum(amount)::text AS credits FROM platform.credit_entries WHERE user_id=$1',
+    'SELECT count(*)::int AS count, sum(amount)::text AS credits, max(operation_key) AS "operationKey" ' +
+    'FROM platform.credit_entries WHERE user_id=$1',
     [userId],
   );
-  assert.deepEqual(afterReplay.rows[0], { count: 1, credits: '25' });
+  assert.deepEqual(afterReplay.rows[0], { count: 1, credits: '25', operationKey: 'signup:' + userId });
 
   await assert.rejects(
     () => getPlatformActor(new Headers({ 'muapi-key': 'provider-token', Origin: BASE })),
@@ -153,7 +157,14 @@ test('real Postgres + SMTP verification + sessions + account replay', { timeout:
   const changedLogin = await endpoint('/sign-in/email', { email, password: replacementPassword });
   assert.equal(changedLogin.status, 200, 'New password must work');
   const changedCookie = sessionCookie(changedLogin);
-  assert.equal((await getPlatformActor(new Headers({ Cookie: changedCookie }))).userId, userId);
+  const changedActor = await getPlatformActor(new Headers({ Cookie: changedCookie }));
+  assert.equal(changedActor.userId, userId);
+  assert.deepEqual(changedActor.creditMeter, {
+    settledBalance: '25', reserved: '0', available: '25', spent: '0',
+  });
+  assert.equal((await pool.query(
+    "SELECT count(*)::int AS n FROM platform.credit_entries WHERE user_id=$1 AND kind='starter_grant'", [userId],
+  )).rows[0].n, 1);
   // This server-side assertion bypasses browser rate limits but still verifies
   // Better Auth rejects the old password after successful recovery.
   await assert.rejects(
