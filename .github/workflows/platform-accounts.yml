@@ -1,0 +1,40 @@
+name: Platform accounts foundation
+on:
+  push:
+    branches: [feat/platform-accounts]
+  pull_request:
+    paths:
+      - 'db/migrations/**'
+      - 'lib/platform/accounts/**'
+      - 'tests/platformAccounts.test.mjs'
+      - 'tests/platformAccounts.pg.sh'
+      - '.github/workflows/platform-accounts.yml'
+jobs:
+  accounts:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: platform_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d platform_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/platform_test
+      PGSSLMODE: disable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Contract unit tests
+        run: node --test tests/platformAccounts.test.mjs
+      - name: PostgreSQL migration and provisioning tests
+        run: bash tests/platformAccounts.pg.sh
