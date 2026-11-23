@@ -132,6 +132,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.56.1",
     "@tailwindcss/vite": "^4.1.18",
     "autoprefixer": "^10.4.24",
     "electron": "^33.4.11",

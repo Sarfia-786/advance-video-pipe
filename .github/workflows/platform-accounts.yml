@@ -20,13 +20,16 @@ on:
       - 'components/AccountPortal*'
       - 'messages/*/accounts.json'
       - 'tests/platform*'
+      - 'tests/support/accountInbox.mjs'
+      - 'e2e/accounts.spec.mjs'
+      - 'playwright.accounts.config.mjs'
       - 'scripts/migrate-platform-auth.mjs'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/platform-accounts.yml'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   accounts:
@@ -66,32 +69,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Resolve exact npm dependency tree without running install scripts
-        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-      - name: Preserve generated lockfile on the isolated feature branch
-        if: github.event_name == 'push' && github.ref == 'refs/heads/feat/platform-accounts'
-        run: |
-          cp package-lock.json /tmp/platform-accounts-lock.json
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          for attempt in 1 2 3 4 5; do
-            git fetch --no-tags --depth=2 origin feat/platform-accounts
-            git reset --hard FETCH_HEAD
-            cp /tmp/platform-accounts-lock.json package-lock.json
-            if git diff --quiet -- package-lock.json; then
-              echo "Lockfile already current"
-              break
-            fi
-            git add package-lock.json
-            git commit -m 'chore(accounts): lock authentication dependencies [skip ci]'
-            if git push origin HEAD:feat/platform-accounts; then
-              echo "Lockfile checkpoint pushed"
-              break
-            fi
-            if [ "$attempt" = 5 ]; then echo "Lockfile push retry limit reached" >&2; exit 1; fi
-          done
-      - name: Clean install using regenerated lockfile
+      - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
       - name: Contract and runtime configuration tests
         run: node --test tests/platformAccounts.test.mjs tests/platformAuthConfig.test.mjs
       - name: Full Node regression suite
@@ -124,3 +105,7 @@ jobs:
             sleep 1
           done
           node --test tests/platformAuth.http.mjs
+      - name: Install Chromium for account browser tests
+        run: npx --no-install playwright install --with-deps --only-shell chromium
+      - name: Verify English and Chinese account journeys in Chromium
+        run: npx --no-install playwright test -c playwright.accounts.config.mjs
