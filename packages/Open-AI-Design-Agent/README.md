@@ -133,8 +133,8 @@ The **Workflow Studio** lets you build and run multi-step design pipelines witho
 
 ```bash
 # Clone the repository
-git clone https://github.com/Anil-matcha/Open-AI-Design-Agent.git
-cd Open-AI-Design-Agent
+git clone https://github.com/Sarfia-786/advance-video-pipe.git
+cd advance-video-pipe/packages/Open-AI-Design-Agent
 
 # Install client dependencies
 npm run install:all
@@ -245,8 +245,8 @@ This project is an independent, experimental, and open-source initiative and is 
 
 **Self-Hosted:**
 ```bash
-git clone https://github.com/Anil-matcha/Open-AI-Design-Agent.git
-cd Open-AI-Design-Agent
+git clone https://github.com/Sarfia-786/advance-video-pipe.git
+cd advance-video-pipe/packages/Open-AI-Design-Agent
 npm run install:all && npm run dev:app
 ```
 
