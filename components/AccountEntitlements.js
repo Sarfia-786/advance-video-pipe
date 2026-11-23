@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import styles from './AccountPortal.module.css';
 
-export default function AccountEntitlements({ entitlements, copy, locale }) {
+export default function AccountEntitlements({ entitlements, credits, copy, locale }) {
   const [history, setHistory] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -42,6 +42,11 @@ export default function AccountEntitlements({ entitlements, copy, locale }) {
       <dt>{copy.voice}</dt><dd>{copy.minutes.replace('{n}', numbers.format(limits.monthlyVoiceMinutes))}</dd>
       <dt>{copy.concurrency}</dt><dd>{numbers.format(limits.maxConcurrentJobs)}</dd>
       <dt>{copy.watermark}</dt><dd>{capabilities.watermarkRequired ? copy.required : copy.off}</dd>
+      {credits && <>
+        <dt>{copy.availableCredits}</dt><dd>{numbers.format(BigInt(credits.available))}</dd>
+        <dt>{copy.reservedCredits}</dt><dd>{numbers.format(BigInt(credits.reserved))}</dd>
+        <dt>{copy.spentCredits}</dt><dd>{numbers.format(BigInt(credits.spent))}</dd>
+      </>}
     </dl>
     {capabilities.usageHistory === 'detailed' && <div>
       {history && (history.entries.length ? <table>
