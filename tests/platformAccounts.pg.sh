@@ -43,3 +43,24 @@ if psql -X -v ON_ERROR_STOP=1 "$DATABASE_URL" -c "SELECT platform.provision_acco
   exit 1
 fi
 echo "PostgreSQL account foundation checks passed"
+
+# A pre-lifecycle Premium account keeps access on upgrade. Replays preserve later billing updates.
+psql -X -v ON_ERROR_STOP=1 "$DATABASE_URL" -c "UPDATE platform.user_profiles SET plan = 'premium' WHERE user_id = 'alice'"
+psql -X -v ON_ERROR_STOP=1 "$DATABASE_URL" -f db/migrations/0003_platform_entitlements.sql
+psql -X -v ON_ERROR_STOP=1 "$DATABASE_URL" <<'SQL'
+DO $$
+BEGIN
+  IF (SELECT subscription_status FROM platform.user_profiles WHERE user_id = 'alice') IS DISTINCT FROM 'active'
+    OR (SELECT subscription_status FROM platform.user_profiles WHERE user_id = 'bob') IS DISTINCT FROM 'free'
+  THEN RAISE EXCEPTION 'incorrect subscription backfill'; END IF;
+END $$;
+UPDATE platform.user_profiles SET subscription_status='canceling', access_until='2030-01-01T00:00:00Z' WHERE user_id='alice';
+SQL
+psql -X -v ON_ERROR_STOP=1 "$DATABASE_URL" -f db/migrations/0003_platform_entitlements.sql
+psql -X -v ON_ERROR_STOP=1 "$DATABASE_URL" <<'SQL'
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM platform.user_profiles WHERE user_id='alice' AND subscription_status='canceling'
+                 AND access_until='2030-01-01T00:00:00Z') THEN RAISE EXCEPTION 'migration overwrote cancellation'; END IF;
+END $$;
+SQL

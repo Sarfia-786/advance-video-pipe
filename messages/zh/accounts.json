@@ -46,5 +46,53 @@
   "invalidToken": "重置链接无效或已过期，请重新申请。",
   "verificationDone": "邮箱已验证。现在可以登录。",
   "invalidVerification": "验证链接已失效。请登录以接收新的验证邮件。",
-  "deletionDone": "你的账户已删除。"
+  "deletionDone": "你的账户已删除。",
+  "entitlements": {
+    "plans": {
+      "free": "免费版",
+      "premium": "高级版"
+    },
+    "limits": "套餐与用量上限",
+    "subscription": "订阅状态",
+    "statuses": {
+      "free": "免费",
+      "active": "生效中",
+      "trialing": "试用中",
+      "past_due": "已逾期",
+      "canceling": "到期后取消",
+      "canceled": "已取消",
+      "expired": "已到期",
+      "payment_failed": "付款失败"
+    },
+    "accessUntil": "权益截止日期",
+    "projects": "项目保留期限",
+    "persistent": "长期保留",
+    "days": "{n} 天",
+    "storage": "云存储上限",
+    "voice": "每月语音额度",
+    "concurrency": "并行任务数上限",
+    "minutes": "{n} 分钟",
+    "watermark": "导出水印",
+    "required": "必须添加",
+    "off": "无",
+    "history": "积分明细",
+    "date": "日期",
+    "activity": "类型",
+    "credits": "积分",
+    "noEntries": "暂无积分记录。",
+    "more": "加载更早的记录",
+    "loading": "正在加载明细…",
+    "historyError": "未能加载积分明细，请重试。",
+    "accessChanged": "你的访问权限已更改。请刷新页面查看当前套餐。",
+    "kinds": {
+      "starter_grant": "注册赠送",
+      "purchase": "购买积分",
+      "subscription": "订阅积分",
+      "reserve": "预留积分",
+      "capture": "使用扣费",
+      "release": "解除预留",
+      "refund": "退款",
+      "adjustment": "调整"
+    }
+  }
 }
