@@ -45,7 +45,8 @@ test('auth route is handled locally, not forwarded to MuAPI', async () => {
   assert.equal(session.status, 200);
   const crossOrigin = await fetch(BASE + '/api/platform/v1/auth/sign-in/email', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Origin: 'https://attacker.example' },
+    // The local CI ingress assigns this request a fresh bucket after the dedicated throttle test.
+    headers: { 'Content-Type': 'application/json', Origin: 'https://attacker.example', 'x-test-ingress-ip': '203.0.113.81' },
     body: JSON.stringify({ email: 'does-not-exist@example.test', password: 'NotMyPassword123456' }),
   });
   assert.equal(crossOrigin.status, 403, 'Unknown Origin should be denied');

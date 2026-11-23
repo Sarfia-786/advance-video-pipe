@@ -98,6 +98,8 @@ jobs:
       - name: Verify Next production build
         run: npm run build
       - name: HTTP smoke of localized account pages and private API boundary
+        env:
+          AUTH_TRUSTED_IP_HEADER: x-test-ingress-ip
         run: |
           node node_modules/next/dist/bin/next start --hostname 127.0.0.1 --port 3000 > /tmp/platform-next.log 2>&1 &
           server_pid=$!
