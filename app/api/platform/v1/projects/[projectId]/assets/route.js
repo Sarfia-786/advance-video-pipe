@@ -8,7 +8,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const upload = projectRoute(async ({ pool, owner, request, params }) => {
-  await requireProjectAccess(pool, owner, params.projectId);
+  await requireProjectAccess(pool, owner, params.projectId, 'editor');
   const query = new URL(request.url).searchParams;
   const metadata = { filename: query.get('filename'), kind: query.get('kind'), mediaType: request.headers.get('content-type') };
   const bytes = await readBounded(request, maxAssetBytes);

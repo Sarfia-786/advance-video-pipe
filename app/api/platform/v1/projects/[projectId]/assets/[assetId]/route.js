@@ -5,6 +5,6 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export const DELETE = projectRoute(async ({ pool, owner, params }) => {
-  await removeAsset(pool, owner, params.projectId, params.assetId);
-  return { deleted: true };
+  const projectRevision = await removeAsset(pool, owner, params.projectId, params.assetId);
+  return { deleted: true, projectRevision };
 });
