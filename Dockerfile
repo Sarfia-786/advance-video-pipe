@@ -25,7 +25,8 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages ./packages
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/db/migrations ./db/migrations
-COPY --from=builder /app/lib/platform/accounts ./lib/platform/accounts
+COPY --from=builder /app/lib/platform ./lib/platform
+COPY --from=builder /app/scripts/cleanup-platform-projects.mjs ./scripts/cleanup-platform-projects.mjs
 COPY --from=builder /app/scripts/migrate-platform-auth.mjs ./scripts/migrate-platform-auth.mjs
 
 EXPOSE 3000

@@ -13,6 +13,9 @@ try {
   await runMigrations();
   await db.query(await sql('0002_account_lifecycle.sql'));
   await db.query(await sql('0003_platform_entitlements.sql'));
+  // Projects depend on accounts and entitlements and have their own replay-safe schema.
+  await db.query(await sql('0006_private_projects.sql'));
+  await db.query(await sql('0007_project_collaboration.sql'));
   await db.query(await sql('0004_credit_ledger.sql'));
   console.log('Platform account, entitlements and credit ledger migrations applied');
 } finally {

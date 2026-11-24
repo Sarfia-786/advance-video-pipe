@@ -1,0 +1,14 @@
+.section { margin-block: 1.6rem; }
+.section h2 { font-size: 1.25rem; font-weight: 600; margin-bottom: .8rem; }
+.rows { list-style: none; padding: 0; }
+.row { display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: .6rem 1rem; padding-block: .8rem; border-bottom: 1px solid var(--glass-border, #373b46); overflow-wrap: anywhere; }
+.row a, .actions button { text-decoration: underline; text-underline-offset: .2em; }
+.actions { display: flex; gap: .9rem; align-items: center; flex-wrap: wrap; }
+.actions button { color: inherit; cursor: pointer; }
+.actions button:disabled { opacity: .5; }
+.note { color: var(--text-secondary, #b5becd); font-size: .9rem; margin: .4rem 0; }
+.warning { color: var(--text-primary, #ffe4a0); border-inline-start: 3px solid #d69228; padding-inline-start: .65rem; }
+.control { border: 1px solid #777; border-radius: .5rem; padding: .75rem; color: inherit; background: var(--bg-card, #11131b); }
+textarea.control { width: 100%; resize: vertical; }
+.controls { display: grid; gap: .8rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); margin-bottom: 1rem; }
+.section summary { cursor: pointer; font-weight: 600; margin-bottom: .75rem; }
