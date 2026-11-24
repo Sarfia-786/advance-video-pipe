@@ -10,3 +10,5 @@
 .warning { color: var(--text-primary, #ffe4a0); border-inline-start: 3px solid #d69228; padding-inline-start: .65rem; }
 .control { border: 1px solid #777; border-radius: .5rem; padding: .75rem; color: inherit; background: var(--bg-card, #11131b); }
 textarea.control { width: 100%; resize: vertical; }
+.controls { display: grid; gap: .8rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); margin-bottom: 1rem; }
+.section summary { cursor: pointer; font-weight: 600; margin-bottom: .75rem; }
